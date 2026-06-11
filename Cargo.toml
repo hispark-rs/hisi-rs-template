@@ -1,0 +1,37 @@
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+edition = "2024"
+authors = ["{{authors}}"]
+license = "MIT"
+
+[[bin]]
+name = "{{crate_name}}"
+path = "src/main.rs"
+
+[dependencies]
+{%- if chip == "ws63" %}
+hisi-riscv-hal = { version = "0.3"{% if starter == "async" %}, features = ["embassy"]{% endif %} }
+hisi-riscv-rt = "0.2"
+ws63-pac = "0.1"
+{%- else %}
+# chip-bs21 covers the whole BS2X family (BS21/BS22/BS20); the chip differs only
+# in L2RAM size, set in memory.x.
+hisi-riscv-hal = { version = "0.3", default-features = false, features = ["chip-bs21", "rt"{% if starter == "async" %}, "embassy"{% endif %}] }
+hisi-riscv-rt = { version = "0.2", default-features = false, features = ["chip-bs21"] }
+bs2x-pac = "0.1"
+{%- endif %}
+riscv = "0.13"
+{%- if starter == "blinky" %}
+embedded-hal = "1.0.0"
+{%- endif %}
+{%- if starter == "async" %}
+embassy-executor = { version = "0.10", features = ["platform-riscv32", "executor-thread"] }
+embassy-time = { version = "0.5", features = ["tick-hz-1_000_000"] }
+static_cell = "2"
+{%- endif %}
+
+[profile.release]
+opt-level = "s"
+lto = true
+debug = true

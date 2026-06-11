@@ -1,0 +1,22 @@
+# RISC-V target for the HiSilicon {{chip}} (ws63-rs ecosystem).
+#
+# The application core is RV32IMFC_Zicsr: hardware single-float (ilp32f) and NO
+# atomic ('a') extension. `riscv32imfc-unknown-none-elf` is a BUILTIN target in the
+# custom `ws63` toolchain (see rust-toolchain.toml), so no `-Z build-std` is needed —
+# the toolchain ships precompiled core/alloc. Atomics lower to plain ld/st on the
+# single hart; RMW goes through portable-atomic's critical-section polyfill.
+[build]
+target = "riscv32imfc-unknown-none-elf"
+
+[target.riscv32imfc-unknown-none-elf]
+# `cargo run` boots the firmware in the hisi-riscv-qemu machine model. QEMU appends
+# the built ELF as the value of the trailing `-kernel` flag. UART0 is routed to
+# stdio by `-nographic`; quit QEMU with Ctrl-A then X.
+#
+#   build the QEMU fork first:  https://github.com/hispark-rs/hisi-riscv-qemu
+#   (its scripts/build.sh produces a qemu-system-riscv32 with `-M {{chip}}`).
+runner = "qemu-system-riscv32 -M {{chip}} -nographic -bios none -kernel"
+
+# Disable RISC-V linker relaxation (matches the vendor C SDK flow; avoids
+# gp-relative relaxation surprises with hisi-riscv-rt's custom linker scripts).
+rustflags = ["-C", "link-arg=--no-relax"]

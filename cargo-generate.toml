@@ -1,0 +1,24 @@
+[template]
+cargo_generate_version = ">=0.18.0"
+description = "HiSilicon WS63 / BS2X bare-metal Rust app (ws63-rs ecosystem)"
+
+[placeholders.chip]
+type = "string"
+prompt = "Target chip"
+choices = ["ws63", "bs21", "bs20"]
+default = "ws63"
+
+[placeholders.starter]
+type = "string"
+prompt = "Starter app"
+choices = ["blinky", "uart_hello", "async"]
+default = "blinky"
+
+# WS63 gets its memory layout from hisi-riscv-rt's bundled linker scripts, so a
+# project-level memory.x is only needed for the BS2X family.
+[conditional.'chip == "ws63"']
+ignore = ["memory.x"]
+
+# Reject the WS63-only `async` starter on a BS2X chip (see the script for why).
+[hooks]
+pre = ["pre-script.rhai"]
