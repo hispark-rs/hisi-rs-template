@@ -18,7 +18,3 @@ default = "blinky"
 # project-level memory.x is only needed for the BS2X family.
 [conditional.'chip == "ws63"']
 ignore = ["memory.x"]
-
-# Reject the WS63-only `async` starter on a BS2X chip (see the script for why).
-[hooks]
-pre = ["pre-script.rhai"]

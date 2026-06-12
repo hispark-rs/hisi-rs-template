@@ -103,17 +103,20 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
     }
 }
 {%- when "async" -%}
-//! {{project-name}} — embassy multitask on the WS63.
+//! {{project-name}} — embassy multitask on the HiSilicon {{chip}}.
 //!
 //! Runs `embassy-executor` (platform-riscv32, thread mode) with two async tasks
 //! that `Timer::after_millis(..).await` at different rates. Time comes from
-//! `hisi_riscv_hal::embassy` — the WS63 embassy-time `Driver` (now() via the TCXO
-//! 64-bit counter, alarms via a TIMER channel). Proves full embassy adaptation on
-//! the single-core, no-atomics WS63 (atomics via portable-atomic + critical-section).
+//! `hisi_riscv_hal::embassy` — the chip-neutral embassy-time `Driver` (now() via
+//! the TCXO 64-bit counter, alarms via a TIMER channel). Proves full embassy
+//! adaptation on the single-core, no-atomics core (atomics via portable-atomic +
+//! critical-section).
 //!
 //! The HAL time-driver does not install a trap handler, so this app owns its
-//! `mtvec` and routes the alarm channel's IRQ (TIMER_INT0 = 26) to
-//! `hisi_riscv_hal::embassy::on_alarm_interrupt`.
+//! `mtvec` and routes the alarm channel's IRQ to
+//! `hisi_riscv_hal::embassy::on_alarm_interrupt`. The IRQ number is per-chip
+//! (WS63 = 26, BS2X = 53), so the handler compares against the HAL's `ALARM_IRQ`
+//! rather than a literal.
 
 #![no_std]
 #![no_main]
@@ -126,8 +129,8 @@ use hisi_riscv_rt::entry;
 use static_cell::StaticCell;
 
 // ── raw UART0 output (avoids sharing a Uart handle across tasks) ──
-const UART0_DATA: *mut u32 = 0x4401_0004 as *mut u32;
-const UART0_FIFO: *const u32 = 0x4401_0044 as *const u32;
+const UART0_DATA: *mut u32 = {% if chip == "ws63" %}0x4401_0004{% else %}0x5208_1004{% endif %} as *mut u32;
+const UART0_FIFO: *const u32 = {% if chip == "ws63" %}0x4401_0044{% else %}0x5208_1044{% endif %} as *const u32;
 
 fn putc(b: u8) {
     unsafe {
@@ -181,7 +184,8 @@ unsafe extern "C" {
 extern "C" fn atrap_handle() {
     let mcause: u32;
     unsafe { core::arch::asm!("csrr {0}, mcause", out(reg) mcause) };
-    if (mcause & 0x8000_0000) != 0 && (mcause & 0xFFF) == 26 {
+    // Interrupt (bit31) and cause == the embassy alarm IRQ (26 on WS63, 53 on BS2X).
+    if (mcause & 0x8000_0000) != 0 && (mcause & 0xFFF) == hisi_riscv_hal::embassy::ALARM_IRQ {
         hisi_riscv_hal::embassy::on_alarm_interrupt(); // embassy-time alarm fired
     }
 }
