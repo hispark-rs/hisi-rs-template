@@ -8,17 +8,17 @@ Starter: **{{starter}}**.
 
 ## Prerequisites
 
-1. **The `ws63` toolchain** — a stable rustc with the `riscv32imfc-unknown-none-elf`
+1. **The `hisi-riscv` toolchain** — a stable rustc with the `riscv32imfc-unknown-none-elf`
    target baked in as a builtin (hardware single-float, no atomics). It is *not* a
    normal rustup channel; install + link it once:
 
    ```bash
-   curl -LO https://github.com/hispark-rs/ws63-rust-toolchain/releases/download/v1.96.0-1/ws63-rust-1.96.0-x86_64-unknown-linux-gnu.tar.gz
-   tar xzf ws63-rust-1.96.0-x86_64-unknown-linux-gnu.tar.gz
-   rustup toolchain link ws63 "$PWD/stage2"
+   curl -LO https://github.com/hispark-rs/hisi-riscv-rust-toolchain/releases/download/v1.96.0-2/hisi-riscv-rust-1.96.0-x86_64-unknown-linux-gnu.tar.gz
+   tar xzf hisi-riscv-rust-1.96.0-x86_64-unknown-linux-gnu.tar.gz
+   rustup toolchain link hisi-riscv "$PWD/stage2"
    ```
 
-   `rust-toolchain.toml` already pins `channel = "ws63"`, so cargo picks it up here.
+   `rust-toolchain.toml` already pins `channel = "hisi-riscv"`, so cargo picks it up here.
 
 2. **QEMU** (for `cargo run`) — the [hisi-riscv-qemu](https://github.com/hispark-rs/hisi-riscv-qemu)
    fork, which adds the `-M {{chip}}` machine. Build it and put its
@@ -75,7 +75,7 @@ Expected: two async tasks interleave on the embassy executor:
 On-silicon flashing uses the vendor `burntool` / `loaderboot` flow (or the
 in-progress [probe-rs](https://github.com/hispark-rs/probe-rs/tree/add-hisilicon-ws63-bs21)
 support). Build a release binary, convert to the vendor image format, and flash
-per the [ws63-rs HIL guide](https://github.com/hispark-rs/hisi-riscv-rs/tree/main/hil).
+per the [hisi-riscv-rs HIL guide](https://github.com/hispark-rs/hisi-riscv-rs/tree/main/hil).
 
 ## Layout
 
@@ -84,7 +84,7 @@ per the [ws63-rs HIL guide](https://github.com/hispark-rs/hisi-riscv-rs/tree/mai
 | `src/main.rs` | The `{{starter}}` application. |
 | `Cargo.toml` | Depends on `hisi-riscv-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% endif %} from crates.io. |
 | `.cargo/config.toml` | RISC-V target + the `cargo run` QEMU runner. |
-| `rust-toolchain.toml` | Pins the custom `ws63` toolchain. |
+| `rust-toolchain.toml` | Pins the custom `hisi-riscv` toolchain. |
 | `build.rs` | Opts into hisi-riscv-rt's linker scripts. |
 {% if chip != "ws63" %}| `memory.x` | The {{chip}} memory map (BS2X ships its own; WS63 uses the bundled one). |
 {% endif %}

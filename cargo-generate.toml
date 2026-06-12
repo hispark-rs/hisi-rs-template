@@ -1,6 +1,6 @@
 [template]
 cargo_generate_version = ">=0.18.0"
-description = "HiSilicon WS63 / BS2X bare-metal Rust app (ws63-rs ecosystem)"
+description = "HiSilicon WS63 / BS2X bare-metal Rust app (hisi-riscv-rs ecosystem)"
 
 # The BS2X family is one chip in the HAL (`chip-bs21`); the SKUs differ only in
 # L2RAM size (bs20 = 128K, the rest 160K, set in memory.x) and the QEMU machine

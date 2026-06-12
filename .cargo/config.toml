@@ -2,7 +2,7 @@
 #
 # The application core is RV32IMFC_Zicsr: hardware single-float (ilp32f) and NO
 # atomic ('a') extension. `riscv32imfc-unknown-none-elf` is a BUILTIN target in the
-# custom `ws63` toolchain (see rust-toolchain.toml), so no `-Z build-std` is needed —
+# custom `hisi-riscv` toolchain (see rust-toolchain.toml), so no `-Z build-std` is needed —
 # the toolchain ships precompiled core/alloc. Atomics lower to plain ld/st on the
 # single hart; RMW goes through portable-atomic's critical-section polyfill.
 [build]
