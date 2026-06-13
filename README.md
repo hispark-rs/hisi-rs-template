@@ -13,8 +13,11 @@ Starter: **{{starter}}**.
    normal rustup channel; install + link it once:
 
    ```bash
-   curl -LO https://github.com/hispark-rs/hisi-riscv-rust-toolchain/releases/download/v1.96.0-2/hisi-riscv-rust-1.96.0-x86_64-unknown-linux-gnu.tar.gz
-   tar xzf hisi-riscv-rust-1.96.0-x86_64-unknown-linux-gnu.tar.gz
+   # Release v1.96.0-2 ships four hosts — swap the triple below to match yours:
+   #   x86_64-unknown-linux-gnu · aarch64-unknown-linux-gnu · aarch64-apple-darwin · x86_64-pc-windows-msvc
+   HOST=x86_64-unknown-linux-gnu
+   curl -LO https://github.com/hispark-rs/hisi-riscv-rust-toolchain/releases/download/v1.96.0-2/hisi-riscv-rust-1.96.0-$HOST.tar.gz
+   tar xzf hisi-riscv-rust-1.96.0-$HOST.tar.gz
    rustup toolchain link hisi-riscv "$PWD/stage2"
    ```
 
