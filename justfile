@@ -40,30 +40,44 @@ build:
 run:
     cargo run --release
 
-# flashboot jumps unconditionally to (app partition + 0x300), so a bare ELF/bin
-# does NOT boot — this 0x300 HiSilicon header is what makes the image bootable.
-#
-# Build + wrap the ELF in the 0x300 HiSilicon app-image header -> {{img}}.
+{% endraw %}{% if chip == "ws63" %}{% raw %}
+# With the `boot-header` feature the 0x300 HiSilicon header is baked into the ELF
+# at link time, so the bare ELF is directly bootable — no `hisi-fwpkg image` step.
+# flashboot still checks the body hash (secure-verify only skips the signature),
+# so fill it post-link with `hisi-fwpkg patch-hash`.
+patch: build
+    hisi-fwpkg patch-hash {{elf}}
+
+# Flash the bootable ELF straight to flash (via the PATCHED probe-rs fork), reset.
+flash: patch
+    probe-rs download --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} {{elf}}
+    probe-rs reset --chip {{CHIP}} --chip-description-path {{CHIP_DESC}}
+
+# The hardware equivalent of `just run`: flash + run on real silicon, capturing
+# RTT / semihosting (and running `embedded-test` tests if the binary uses them).
+# Ctrl-C to stop.
+run-hw: patch
+    probe-rs run --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} {{elf}}
+{% endraw %}{% else %}{% raw %}
+# flashboot jumps unconditionally to (app partition + 0x300); the 0x300 header is
+# what makes the image bootable. (BS2X has no link-time boot-header yet, so this
+# chip uses the post-build `hisi-fwpkg image` path.)
 image: build
     hisi-fwpkg image -o {{img}} {{elf}}
 
-# Secure boot is disabled on the dev chip (efuse SEC_VERIFY_ENABLE == 0), so the
-# dummy-signature image hisi-fwpkg produces is sufficient — no real signing key.
-#
 # Flash {{img}} to the app partition via the PATCHED probe-rs fork, then reset.
 flash: image
     probe-rs download --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} \
         --binary-format bin --base-address {{APP_ADDR}} {{img}}
     probe-rs reset --chip {{CHIP}} --chip-description-path {{CHIP_DESC}}
 
-# The hardware equivalent of `just run`: flash to real silicon, then stream UART0
-# so you see the boot output. Set PORT to your board UART (CH340 USB-serial),
-# NOT the J-Link VCOM. Examples that print only once at boot: re-run `just flash`
-# in another shell while this streams.
+# The hardware equivalent of `just run`: flash, then stream UART0 (CH340, not the
+# J-Link VCOM). Ctrl-C to stop.
 run-hw PORT='/dev/ttyUSB0' BAUD='115200': flash
     @echo "streaming {{PORT}} @ {{BAUD}} 8N1 (Ctrl-C to stop)"
     @stty -F {{PORT}} {{BAUD}} raw -echo
     @cat {{PORT}}
+{% endraw %}{% endif %}{% raw %}
 
 # hisi-fwpkg picks the per-chip app address itself; no probe-rs fork needed.
 #
