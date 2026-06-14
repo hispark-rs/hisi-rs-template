@@ -56,6 +56,15 @@ flash: image
         --binary-format bin --base-address {{APP_ADDR}} {{img}}
     probe-rs reset --chip {{CHIP}} --chip-description-path {{CHIP_DESC}}
 
+# The hardware equivalent of `just run`: flash to real silicon, then stream UART0
+# so you see the boot output. Set PORT to your board UART (CH340 USB-serial),
+# NOT the J-Link VCOM. Examples that print only once at boot: re-run `just flash`
+# in another shell while this streams.
+run-hw PORT='/dev/ttyUSB0' BAUD='115200': flash
+    @echo "streaming {{PORT}} @ {{BAUD}} 8N1 (Ctrl-C to stop)"
+    @stty -F {{PORT}} {{BAUD}} raw -echo
+    @cat {{PORT}}
+
 # hisi-fwpkg picks the per-chip app address itself; no probe-rs fork needed.
 #
 # Vendor path: build a single-partition .fwpkg to flash with `hisiflash`.
