@@ -17,7 +17,25 @@ prompt = "Starter app"
 choices = ["blinky", "uart_hello", "async"]
 default = "blinky"
 
+# The flash address of the `app` partition that flashboot loads the image from.
+# `hisi-fwpkg` knows the per-chip default, but the `probe-rs download
+# --base-address` path in the justfile needs it spelled out, so capture it here.
+# Defined per-chip via mutually-exclusive conditionals (so the default is correct
+# even in `--silent` generation):
+#   WS63  = 0x00230000  (hardware-validated 2026-06-14)
+#   BS2X  = 0x00090000  (hisi-fwpkg's `Chip::Bs21` default — NOT yet HIL-validated;
+#                        confirm against your fbb_bs2x partition table before trusting it)
+[conditional.'chip == "ws63"']
 # WS63 gets its memory layout from hisi-riscv-rt's bundled linker scripts, so a
 # project-level memory.x is only needed for the BS2X family.
-[conditional.'chip == "ws63"']
 ignore = ["memory.x"]
+
+[conditional.'chip == "ws63"'.placeholders.app_partition_addr]
+type = "string"
+prompt = "App partition flash address (leave default unless you have a custom partition table)"
+default = "0x00230000"
+
+[conditional.'chip != "ws63"'.placeholders.app_partition_addr]
+type = "string"
+prompt = "App partition flash address (BS2X default; verify against your fbb_bs2x partition table)"
+default = "0x00090000"

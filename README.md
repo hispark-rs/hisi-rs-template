@@ -75,10 +75,76 @@ Expected: two async tasks interleave on the embassy executor:
 {% endif %}
 ## Flash to hardware
 
-On-silicon flashing uses the vendor `burntool` / `loaderboot` flow (or the
-in-progress [probe-rs](https://github.com/hispark-rs/probe-rs/tree/add-hisilicon-ws63-bs21)
-support). Build a release binary, convert to the vendor image format, and flash
-per the [hisi-riscv-rs HIL guide](https://github.com/hispark-rs/hisi-riscv-rs/tree/main/hil).
+> Validated end-to-end on real {% if chip == "ws63" %}WS63{% else %}{{chip}}{% endif %} silicon
+> (blinky boots + blinks, 2026-06-14){% if chip != "ws63" %} for WS63; the BS2X address
+> below is `hisi-fwpkg`'s default and is **not yet HIL-validated** — confirm it
+> against your `fbb_bs2x` partition table first{% endif %}.
+
+A bare ELF/`.bin` does **not** boot. flashboot loads the app partition at flash
+`{{app_partition_addr}}` and jumps **unconditionally** to `{{app_partition_addr}} + 0x300`,
+so the image needs the fixed 0x300-byte HiSilicon header in front of the code.
+`hisi-fwpkg image` adds exactly that.
+
+No real signing key is required for the dev flow: the dev chips ship with secure
+boot **disabled** (efuse `SEC_VERIFY_ENABLE == 0`), so flashboot's `verify_image_*`
+short-circuits to success before it ever reads the signature. `hisi-fwpkg` writes
+a structurally-correct header with **zeroed ("dummy") signature** fields, which is
+sufficient on those boards.
+
+### Tools
+
+* **`hisi-fwpkg`** — packs the ELF/bin into a bootable image (or a `.fwpkg`):
+  ```bash
+  cargo install --git https://github.com/hispark-rs/hisi-fwpkg
+  ```
+* **The patched `probe-rs` FORK** — *upstream probe-rs does not support {{chip}} yet.*
+  Install the fork (it also ships the `HiSilicon_WS63.yaml` chip description):
+  ```bash
+  cargo install --git https://github.com/hispark-rs/probe-rs \
+      --branch add-hisilicon-ws63-bs21 probe-rs-tools
+  ```
+
+### One command (via `just`)
+
+This project ships a [`justfile`](https://github.com/casey/just):
+
+```bash
+just flash    # build -> hisi-fwpkg image -> probe-rs download @ app partition -> reset
+```
+
+Point it at the fork's YAML if it isn't in the cwd:
+
+```bash
+just CHIP_DESC=/path/to/HiSilicon_WS63.yaml flash
+```
+
+### Manual (what `just flash` runs)
+
+```bash
+cargo build --release
+hisi-fwpkg image -o {{crate_name}}.img \
+    target/riscv32imfc-unknown-none-elf/release/{{crate_name}}
+
+# Flash via the patched probe-rs FORK (the validated path):
+probe-rs download --chip {% if chip == "ws63" %}WS63{% else %}{{chip | upcase}}{% endif %} \
+    --chip-description-path HiSilicon_WS63.yaml \
+    --binary-format bin --base-address {{app_partition_addr}} {{crate_name}}.img
+probe-rs reset --chip {% if chip == "ws63" %}WS63{% else %}{{chip | upcase}}{% endif %} \
+    --chip-description-path HiSilicon_WS63.yaml
+```
+
+### Vendor alternative (`.fwpkg` + `hisiflash`)
+
+No probe-rs fork needed — build a single-partition package and flash it with the
+vendor tool (`hisi-fwpkg` picks the per-chip app address itself):
+
+```bash
+just fwpkg                       # -> {{crate_name}}.fwpkg
+hisiflash flash {{crate_name}}.fwpkg
+```
+
+See the [hisi-riscv-rs HIL guide](https://github.com/hispark-rs/hisi-riscv-rs/tree/main/hil)
+for wiring and the vendor `burntool` / `loaderboot` UART flow.
 
 ## Layout
 
@@ -87,6 +153,7 @@ per the [hisi-riscv-rs HIL guide](https://github.com/hispark-rs/hisi-riscv-rs/tr
 | `src/main.rs` | The `{{starter}}` application. |
 | `Cargo.toml` | Depends on `hisi-riscv-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% endif %} from crates.io. |
 | `.cargo/config.toml` | RISC-V target + the `cargo run` QEMU runner. |
+| `justfile` | `just build` / `run` / `image` / `flash` / `fwpkg` convenience recipes. |
 | `rust-toolchain.toml` | Pins the custom `hisi-riscv` toolchain. |
 | `build.rs` | Opts into hisi-riscv-rt's linker scripts. |
 {% if chip != "ws63" %}| `memory.x` | The {{chip}} memory map (BS2X ships its own; WS63 uses the bundled one). |
