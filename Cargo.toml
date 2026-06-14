@@ -12,7 +12,10 @@ path = "src/main.rs"
 [dependencies]
 {%- if chip == "ws63" %}
 hisi-riscv-hal = { version = "0.3"{% if starter == "async" %}, features = ["embassy"]{% endif %} }
-hisi-riscv-rt = "0.2"
+# `boot-header` bakes the 0x300 boot header into the ELF at link time, so the
+# bare ELF flashes + boots directly (`just flash`/`just run-hw` patch its hash
+# with `hisi-fwpkg patch-hash`, no separate `hisi-fwpkg image` step).
+hisi-riscv-rt = { version = "0.2.1", features = ["boot-header"] }
 ws63-pac = "0.1"
 {%- else %}
 # chip-bs21 covers the whole BS2X family (BS21/BS22/BS20); the chip differs only
