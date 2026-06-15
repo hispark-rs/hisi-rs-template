@@ -44,7 +44,8 @@ run:
 # With the `boot-header` feature the 0x300 HiSilicon header is baked into the ELF
 # at link time, so the bare ELF is directly bootable — no `hisi-fwpkg image` step.
 # flashboot still checks the body hash (secure-verify only skips the signature),
-# so fill it post-link with `hisi-fwpkg patch-hash`.
+# so fill it post-link: `hisi-fwpkg patch-hash` computes the body SHA-256 and
+# injects it into the header's `code_area_hash` field, in place.
 patch: build
     hisi-fwpkg patch-hash {{elf}}
 
