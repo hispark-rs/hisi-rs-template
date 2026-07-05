@@ -38,7 +38,7 @@ Starter: **{{starter}}**.
 cargo build --release
 ```
 
-The target (`riscv32imfc-unknown-none-elf`) and the linker wiring (`-Tws63-link.x`)
+The target (`riscv32imfc-unknown-none-elf`) and the linker wiring (`-Thisi-riscv-link.x`)
 are configured in `.cargo/config.toml` + `build.rs`, so a plain `cargo build` works.
 
 ## Run (QEMU)
