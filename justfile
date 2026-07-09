@@ -12,7 +12,7 @@
 #   * hisi-fwpkg  — cargo +stable install hisi-fwpkg-cli --version 0.3.0
 #   * the PATCHED probe-rs FORK (upstream probe-rs does NOT know {{chip}} yet):
 #       cargo install --git https://github.com/hispark-rs/probe-rs \
-#           --branch add-hisilicon-ws63-bs21 probe-rs-tools
+#           --branch add-hisilicon-ws63-bs21-hil-baseline probe-rs-tools
 #   * its chip description YAML (HiSilicon_WS63.yaml), shipped in that fork.
 
 # The release ELF cargo produces (cargo names the artifact after [[bin]] = crate_name).

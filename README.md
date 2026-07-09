@@ -112,7 +112,7 @@ embedded-test paths that need symbols and semihosting metadata.
   Install the fork (it also ships the `HiSilicon_WS63.yaml` chip description):
   ```bash
   cargo install --git https://github.com/hispark-rs/probe-rs \
-      --branch add-hisilicon-ws63-bs21 probe-rs-tools
+      --branch add-hisilicon-ws63-bs21-hil-baseline probe-rs-tools
   ```
 
 ### One command (via `just`)
