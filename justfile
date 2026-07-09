@@ -4,8 +4,8 @@
 # wrap the hardware-validated WS63 flash flow (validated on silicon 2026-06-14):
 #
 #     cargo build --release
-#     hisi-fwpkg image  -> app.img   (adds the 0x300 HiSilicon header)
-#     probe-rs download -> flash @ the app partition
+#     hisi-fwpkg plan   -> app.img + app.plan.json
+#     probe-rs download --binary-format bin -> flash @ plan.base_addr
 #     probe-rs reset    -> run
 #
 # Prereqs for the flashing recipes (the build/run ones need none of these):
@@ -19,6 +19,8 @@
 elf := "target/riscv32imfc-unknown-none-elf/release/{{crate_name}}"
 # The packaged, bootable image (0x300 HiSilicon header || body).
 img := "{{crate_name}}.img"
+# The machine-readable flash plan produced by hisi-fwpkg.
+plan := "{{crate_name}}.plan.json"
 # The single-partition vendor package (the `fwpkg` recipe / hisiflash path).
 fwpkg_out := "{{crate_name}}.fwpkg"
 
@@ -26,7 +28,8 @@ fwpkg_out := "{{crate_name}}.fwpkg"
 # CLI, e.g.  `just CHIP_DESC=~/probe-rs/HiSilicon_WS63.yaml flash`
 CHIP        := {% if chip == "ws63" %}"WS63"{% else %}"{{chip | upcase}}"{% endif %}
 CHIP_DESC   := "HiSilicon_WS63.yaml"
-# Flash address of the `app` partition flashboot loads the image from.
+# Flash address override. hisi-fwpkg knows the default; this value is passed only
+# when you choose to override the generated plan.
 APP_ADDR    := "{{app_partition_addr}}"
 
 {% raw %}_default:
@@ -42,36 +45,16 @@ run:
 
 {% endraw %}{% if chip == "ws63" %}{% raw %}
 # With the `boot-header` feature the 0x300 HiSilicon header is baked into the ELF
-# at link time, so the bare ELF is directly bootable — no `hisi-fwpkg image` step.
-# flashboot still checks the body hash (secure-verify only skips the signature),
-# so fill it post-link: `hisi-fwpkg patch-hash` computes the body SHA-256 and
-# injects it into the header's `code_area_hash` field, in place.
+# at link time. This recipe is only for ELF-based `probe-rs run` / embedded-test
+# paths that need symbols and semihosting metadata. Normal flashing uses `image`.
 patch: build
     hisi-fwpkg patch-hash {{elf}}
 
-# Flash the bootable ELF straight to flash (via the PATCHED probe-rs fork), reset.
-flash: patch
-    probe-rs download --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} {{elf}}
-    probe-rs reset --chip {{CHIP}} --chip-description-path {{CHIP_DESC}}
-
-# The hardware equivalent of `just run`: flash + run on real silicon, capturing
-# RTT / semihosting (and running `embedded-test` tests if the binary uses them).
+# The ELF-based hardware run/debug path. Use `flash` for smoke/download.
 # Ctrl-C to stop.
 run-hw: patch
     probe-rs run --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} {{elf}}
 {% endraw %}{% else %}{% raw %}
-# flashboot jumps unconditionally to (app partition + 0x300); the 0x300 header is
-# what makes the image bootable. (BS2X has no link-time boot-header yet, so this
-# chip uses the post-build `hisi-fwpkg image` path.)
-image: build
-    hisi-fwpkg image -o {{img}} {{elf}}
-
-# Flash {{img}} to the app partition via the PATCHED probe-rs fork, then reset.
-flash: image
-    probe-rs download --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} \
-        --binary-format bin --base-address {{APP_ADDR}} {{img}}
-    probe-rs reset --chip {{CHIP}} --chip-description-path {{CHIP_DESC}}
-
 # The hardware equivalent of `just run`: flash, then stream UART0 (CH340, not the
 # J-Link VCOM). Ctrl-C to stop.
 run-hw PORT='/dev/ttyUSB0' BAUD='115200': flash
@@ -79,6 +62,17 @@ run-hw PORT='/dev/ttyUSB0' BAUD='115200': flash
     @stty -F {{PORT}} {{BAUD}} raw -echo
     @cat {{PORT}}
 {% endraw %}{% endif %}{% raw %}
+
+# Build the complete flash image and machine-readable plan. hisi-fwpkg owns the
+# header/hash/body-range semantics; probe-rs only writes the resulting bin.
+image: build
+    hisi-fwpkg plan {{elf}} --chip {% endraw %}{% if chip == "ws63" %}ws63{% else %}bs21{% endif %}{% raw %} --app-addr {{APP_ADDR}} --image-output {{img}} > {{plan}}
+
+# Flash {{img}} to the plan base address via the PATCHED probe-rs fork, then reset.
+flash: image
+    probe-rs download --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} \
+        --binary-format bin --base-address $(python3 -c 'import json; print(json.load(open("{{plan}}"))["base_addr"])') {{img}}
+    probe-rs reset --chip {{CHIP}} --chip-description-path {{CHIP_DESC}}
 
 # hisi-fwpkg picks the per-chip app address itself; no probe-rs fork needed.
 #
@@ -90,5 +84,5 @@ fwpkg: build
 # Remove build + packaging artifacts.
 clean:
     cargo clean
-    -rm -f {{img}} {{fwpkg_out}}
+    -rm -f {{img}} {{plan}} {{fwpkg_out}}
 {% endraw %}

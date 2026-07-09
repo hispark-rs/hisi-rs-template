@@ -17,9 +17,10 @@ prompt = "Starter app"
 choices = ["blinky", "uart_hello", "async"]
 default = "blinky"
 
-# The flash address of the `app` partition that flashboot loads the image from.
-# `hisi-fwpkg` knows the per-chip default, but the `probe-rs download
-# --base-address` path in the justfile needs it spelled out, so capture it here.
+# Optional flash address override for the `app` partition that flashboot loads.
+# `hisi-fwpkg plan` knows the per-chip default and emits `base_addr`; the
+# generated justfile passes this value only so custom partition tables can be
+# captured at project generation time.
 # Defined per-chip via mutually-exclusive conditionals (so the default is correct
 # even in `--silent` generation):
 #   WS63  = 0x00230000  (hardware-validated 2026-06-14)

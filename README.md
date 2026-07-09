@@ -83,21 +83,18 @@ Expected: two async tasks interleave on the embassy executor:
 A bare ELF/`.bin` does **not** boot. flashboot loads the app partition at flash
 `{{app_partition_addr}}` and jumps **unconditionally** to `{{app_partition_addr}} + 0x300`,
 so the image needs the fixed 0x300-byte HiSilicon header in front of the code.
-{% if chip == "ws63" %}With the `boot-header` feature (on by default for WS63),
-`hisi-riscv-rt` links that header **into the ELF at link time** — the release ELF
-is *already* bootable, no separate packaging step. You only patch the body hash
-into it afterwards (next paragraph).{% else %}`hisi-fwpkg image` prepends exactly
-that header to the bare binary.{% endif %}
+`hisi-fwpkg plan` turns the ELF into a complete flash image and a machine-readable
+plan. The plan owns the header/hash/body-range/base-address semantics; probe-rs
+only writes the resulting binary image.
 
 No real signing key is required for the dev flow: the dev chips ship with secure
 boot **disabled** (efuse `SEC_VERIFY_ENABLE == 0`), so flashboot's `verify_image_*`
 short-circuits to success before it ever reads the signature — a structurally
 correct header with a **zeroed ("dummy") signature** is enough. flashboot does
 still check the **body hash** even with secure-verify off, so the header's
-`code_area_hash` must match the code:
-{% if chip == "ws63" %}`hisi-fwpkg patch-hash` computes the body SHA-256 and writes
-it into the link-time header, in place.{% else %}`hisi-fwpkg image` fills it while
-building the image.{% endif %}
+`code_area_hash` must match the code. `hisi-fwpkg plan` computes it while building
+the image. On WS63, `patch-hash` is only for ELF-based `probe-rs run` /
+embedded-test paths that need symbols and semihosting metadata.
 
 > ⚠ If you ever **enable** secure boot (burn `SEC_VERIFY_ENABLE`), this
 > dummy-signature flow stops booting — you then need the vendor signing tools and
@@ -121,7 +118,7 @@ building the image.{% endif %}
 This project ships a [`justfile`](https://github.com/casey/just):
 
 ```bash
-{% if chip == "ws63" %}just flash    # build -> patch-hash (fill body hash) -> probe-rs download (ELF) -> reset{% else %}just flash    # build -> hisi-fwpkg image -> probe-rs download @ app partition -> reset{% endif %}
+just flash    # build -> hisi-fwpkg plan image -> probe-rs bin download @ plan.base_addr -> reset
 ```
 
 Point it at the fork's YAML if it isn't in the cwd:
@@ -134,23 +131,19 @@ just CHIP_DESC=/path/to/HiSilicon_WS63.yaml flash
 
 ```bash
 cargo build --release
-{% if chip == "ws63" %}# The 0x300 header is already linked into the ELF (boot-header feature); just
-# fill its body hash, then download the ELF straight to flash:
-hisi-fwpkg patch-hash target/riscv32imfc-unknown-none-elf/release/{{crate_name}}
 
-# Flash via the patched probe-rs FORK (the validated path):
-probe-rs download --chip WS63 --chip-description-path HiSilicon_WS63.yaml \
-    target/riscv32imfc-unknown-none-elf/release/{{crate_name}}
-probe-rs reset --chip WS63 --chip-description-path HiSilicon_WS63.yaml{% else %}# Prepend the 0x300 header to the bare binary:
-hisi-fwpkg image -o {{crate_name}}.img \
-    target/riscv32imfc-unknown-none-elf/release/{{crate_name}}
+hisi-fwpkg plan target/riscv32imfc-unknown-none-elf/release/{{crate_name}} \
+    --chip {% if chip == "ws63" %}ws63{% else %}bs21{% endif %} \
+    --app-addr {{app_partition_addr}} \
+    --image-output {{crate_name}}.img \
+    > {{crate_name}}.plan.json
 
-# Flash via the patched probe-rs FORK (the validated path):
+BASE_ADDR=$(python3 -c 'import json; print(json.load(open("{{crate_name}}.plan.json"))["base_addr"])')
 probe-rs download --chip {{chip | upcase}} \
     --chip-description-path HiSilicon_WS63.yaml \
-    --binary-format bin --base-address {{app_partition_addr}} {{crate_name}}.img
+    --binary-format bin --base-address "$BASE_ADDR" {{crate_name}}.img
 probe-rs reset --chip {{chip | upcase}} \
-    --chip-description-path HiSilicon_WS63.yaml{% endif %}
+    --chip-description-path HiSilicon_WS63.yaml
 ```
 
 ### Vendor alternative (`.fwpkg` + `hisiflash`)
@@ -173,7 +166,7 @@ for wiring and the vendor `burntool` / `loaderboot` UART flow.
 | `src/main.rs` | The `{{starter}}` application. |
 | `Cargo.toml` | Depends on `hisi-riscv-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% endif %} from crates.io. |
 | `.cargo/config.toml` | RISC-V target + the `cargo run` QEMU runner. |
-| `justfile` | `just build` / `run` / {% if chip == "ws63" %}`patch` / `flash` / `run-hw`{% else %}`image` / `flash`{% endif %} / `fwpkg` convenience recipes. |
+| `justfile` | `just build` / `run` / `image` / `flash`{% if chip == "ws63" %} / `patch` / `run-hw`{% endif %} / `fwpkg` convenience recipes. |
 | `rust-toolchain.toml` | Pins the custom `hisi-riscv` toolchain. |
 | `build.rs` | Opts into hisi-riscv-rt's linker scripts. |
 {% if chip != "ws63" %}| `memory.x` | The {{chip}} memory map (BS2X ships its own; WS63 uses the bundled one). |
