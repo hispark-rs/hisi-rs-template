@@ -1,10 +1,11 @@
 # RISC-V target for the HiSilicon {{chip}} (ws63-rs ecosystem).
 #
 # The application core is RV32IMFC_Zicsr: hardware single-float (ilp32f) and NO
-# atomic ('a') extension. `riscv32imfc-unknown-none-elf` is a BUILTIN target in the
-# custom `hisi-riscv` toolchain (see rust-toolchain.toml), so no `-Z build-std` is needed —
-# the toolchain ships precompiled core/alloc. Atomics lower to plain ld/st on the
-# single hart; RMW goes through portable-atomic's critical-section polyfill.
+# atomic ('a') extension. `riscv32imfc-unknown-none-elf` is an upstream rustc
+# builtin target in the pinned nightly (see rust-toolchain.toml). rustup does not
+# ship prebuilt rust-std for it yet, so RISC-V commands use
+# `-Zbuild-std=core,alloc`. Atomics lower to plain ld/st on the single hart; RMW
+# goes through portable-atomic's critical-section polyfill.
 [build]
 target = "riscv32imfc-unknown-none-elf"
 

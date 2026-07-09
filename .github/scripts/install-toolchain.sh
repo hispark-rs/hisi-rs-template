@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HOST="${HOST_TRIPLE:-x86_64-unknown-linux-gnu}"
-VERSION="${HISI_RISCV_TOOLCHAIN_VERSION:-1.96.0}"
-RELEASE="${HISI_RISCV_TOOLCHAIN_RELEASE:-v1.96.0-2}"
-URL="https://github.com/hispark-rs/hisi-riscv-rust-toolchain/releases/download/${RELEASE}/hisi-riscv-rust-${VERSION}-${HOST}.tar.gz"
+TOOLCHAIN="${RUST_TOOLCHAIN:-nightly-2026-07-09}"
 
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+rustup toolchain install "$TOOLCHAIN" \
+  --profile minimal \
+  --component rust-src \
+  --component clippy \
+  --component rustfmt \
+  --component llvm-tools-preview
 
-curl -fL "$URL" -o "$tmp/toolchain.tar.gz"
-mkdir -p "$HOME/.rustup/toolchains/hisi-riscv"
-tar xzf "$tmp/toolchain.tar.gz" --strip-components=1 -C "$HOME/.rustup/toolchains/hisi-riscv"
-rustup toolchain list | grep -q '^hisi-riscv'
-
+rustc +"$TOOLCHAIN" --version
+rustc +"$TOOLCHAIN" --print target-list | grep -qx 'riscv32imfc-unknown-none-elf'
+rustup target list --toolchain "$TOOLCHAIN" | grep -Eq '^riscv32imfc-unknown-none-elf([[:space:]]|$)' || \
+  echo "rustup has no prebuilt rust-std for riscv32imfc-unknown-none-elf yet; use -Zbuild-std=core,alloc"

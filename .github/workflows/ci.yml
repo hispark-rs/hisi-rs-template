@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install hisi-riscv toolchain
+      - name: Install Rust toolchain
         run: bash .github/scripts/install-toolchain.sh
 
       - uses: dtolnay/rust-toolchain@stable
@@ -62,11 +62,11 @@ jobs:
 
       - name: Check generated project
         working-directory: ${{ runner.temp }}/${{ matrix.project }}
-        run: cargo check
+        run: cargo check -Zbuild-std=core,alloc
 
       - name: Build generated project
         working-directory: ${{ runner.temp }}/${{ matrix.project }}
-        run: cargo build --release
+        run: cargo build -Zbuild-std=core,alloc --release
 
       - name: Check just recipes
         working-directory: ${{ runner.temp }}/${{ matrix.project }}

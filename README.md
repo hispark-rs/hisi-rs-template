@@ -8,20 +8,21 @@ Starter: **{{starter}}**.
 
 ## Prerequisites
 
-1. **The `hisi-riscv` toolchain** — a stable rustc with the `riscv32imfc-unknown-none-elf`
-   target baked in as a builtin (hardware single-float, no atomics). It is *not* a
-   normal rustup channel; install + link it once:
+1. **Official Rust nightly** — `rustc` has the
+   `riscv32imfc-unknown-none-elf` target built in (hardware single-float, no
+   atomics). rustup does not ship a prebuilt `rust-std` component for this target
+   yet, so the project pins nightly and builds `core`/`alloc` from `rust-src`:
 
    ```bash
-   # Release v1.96.0-2 ships four hosts — swap the triple below to match yours:
-   #   x86_64-unknown-linux-gnu · aarch64-unknown-linux-gnu · aarch64-apple-darwin · x86_64-pc-windows-msvc
-   HOST=x86_64-unknown-linux-gnu
-   curl -LO https://github.com/hispark-rs/hisi-riscv-rust-toolchain/releases/download/v1.96.0-2/hisi-riscv-rust-1.96.0-$HOST.tar.gz
-   tar xzf hisi-riscv-rust-1.96.0-$HOST.tar.gz
-   rustup toolchain link hisi-riscv "$PWD/stage2"
+   rustup toolchain install nightly-2026-07-09 \
+       --profile minimal \
+       --component rust-src \
+       --component clippy \
+       --component rustfmt \
+       --component llvm-tools-preview
    ```
 
-   `rust-toolchain.toml` already pins `channel = "hisi-riscv"`, so cargo picks it up here.
+   `rust-toolchain.toml` already pins this nightly, so cargo picks it up here.
 
 2. **QEMU** (for `cargo run`) — the [hisi-riscv-qemu](https://github.com/hispark-rs/hisi-riscv-qemu)
    fork, which adds the `-M {{chip}}` machine. Build it and put its
@@ -35,16 +36,17 @@ Starter: **{{starter}}**.
 ## Build
 
 ```bash
-cargo build --release
+cargo build -Zbuild-std=core,alloc --release
 ```
 
 The target (`riscv32imfc-unknown-none-elf`) and the linker wiring (`-Thisi-riscv-link.x`)
-are configured in `.cargo/config.toml` + `build.rs`, so a plain `cargo build` works.
+are configured in `.cargo/config.toml` + `build.rs`. Use `just build` if you
+prefer not to type the build-std flag.
 
 ## Run (QEMU)
 
 ```bash
-cargo run --release
+cargo run -Zbuild-std=core,alloc --release
 ```
 
 This boots the firmware on the `-M {{chip}}` machine via `qemu-system-riscv32`
@@ -130,7 +132,7 @@ just CHIP_DESC=/path/to/HiSilicon_WS63.yaml flash
 ### Manual (what `just flash` runs)
 
 ```bash
-cargo build --release
+cargo build -Zbuild-std=core,alloc --release
 
 hisi-fwpkg plan target/riscv32imfc-unknown-none-elf/release/{{crate_name}} \
     --chip {% if chip == "ws63" %}ws63{% else %}bs21{% endif %} \
@@ -167,7 +169,7 @@ for wiring and the vendor `burntool` / `loaderboot` UART flow.
 | `Cargo.toml` | Depends on `hisi-riscv-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% endif %} from crates.io. |
 | `.cargo/config.toml` | RISC-V target + the `cargo run` QEMU runner. |
 | `justfile` | `just build` / `run` / `image` / `flash`{% if chip == "ws63" %} / `patch` / `run-hw`{% endif %} / `fwpkg` convenience recipes. |
-| `rust-toolchain.toml` | Pins the custom `hisi-riscv` toolchain. |
+| `rust-toolchain.toml` | Pins the official nightly used by this project. |
 | `build.rs` | Opts into hisi-riscv-rt's linker scripts. |
 {% if chip != "ws63" %}| `memory.x` | The {{chip}} memory map (BS2X ships its own; WS63 uses the bundled one). |
 {% endif %}

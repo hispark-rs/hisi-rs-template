@@ -3,7 +3,7 @@
 # `just` is https://github.com/casey/just (`cargo install just`). These recipes
 # wrap the hardware-validated WS63 flash flow (validated on silicon 2026-06-14):
 #
-#     cargo build --release
+#     cargo build -Zbuild-std=core,alloc --release
 #     hisi-fwpkg plan   -> app.img + app.plan.json
 #     probe-rs download --binary-format bin -> flash @ plan.base_addr
 #     probe-rs reset    -> run
@@ -23,6 +23,9 @@ img := "{{crate_name}}.img"
 plan := "{{crate_name}}.plan.json"
 # The single-partition vendor package (the `fwpkg` recipe / hisiflash path).
 fwpkg_out := "{{crate_name}}.fwpkg"
+# Official upstream rustc has the target built in; rustup does not ship prebuilt
+# rust-std for it yet, so firmware builds compile core/alloc from rust-src.
+build_std := "-Zbuild-std=core,alloc"
 
 # probe-rs fork chip name + the path to its chip-description YAML. Override on the
 # CLI, e.g.  `just CHIP_DESC=~/probe-rs/HiSilicon_WS63.yaml flash`
@@ -37,11 +40,11 @@ APP_ADDR    := "{{app_partition_addr}}"
 
 # Build the release firmware ELF.
 build:
-    cargo build --release
+    cargo build {{build_std}} --release
 
 # Run in QEMU (the hisi-riscv-qemu fork; Ctrl-A then X to quit).
 run:
-    cargo run --release
+    cargo run {{build_std}} --release
 
 {% endraw %}{% if chip == "ws63" %}{% raw %}
 # With the `boot-header` feature the 0x300 HiSilicon header is baked into the ELF

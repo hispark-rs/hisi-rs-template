@@ -1,15 +1,8 @@
-# This project builds with the custom `hisi-riscv` toolchain: a stable rustc (1.96.0) with
-# the target `riscv32imfc-unknown-none-elf` (hardware single-float ilp32f, no atomics)
-# baked in as a BUILTIN — so we build without `-Z build-std`.
-#
-# It is NOT a distributable rustup channel; install + link it first. Release
-# v1.96.0-2 ships four hosts — pick the triple matching yours (linux x86_64/aarch64,
-# aarch64-apple-darwin, x86_64-pc-windows-msvc):
-#   HOST=x86_64-unknown-linux-gnu
-#   curl -LO https://github.com/hispark-rs/hisi-riscv-rust-toolchain/releases/download/v1.96.0-2/hisi-riscv-rust-1.96.0-$HOST.tar.gz
-#   tar xzf hisi-riscv-rust-1.96.0-$HOST.tar.gz
-#   rustup toolchain link hisi-riscv "$PWD/stage2"
-#
-# Build recipe + sources: https://github.com/hispark-rs/hisi-riscv-rust-toolchain
+# Generated projects use the official upstream nightly that contains the
+# `riscv32imfc-unknown-none-elf` builtin target. rustup does not ship a prebuilt
+# rust-std component for this target yet, so the just recipes pass
+# `-Zbuild-std=core,alloc` and require rust-src.
 [toolchain]
-channel = "hisi-riscv"
+channel = "nightly-2026-07-09"
+profile = "minimal"
+components = ["rust-src", "clippy", "rustfmt", "llvm-tools-preview"]
