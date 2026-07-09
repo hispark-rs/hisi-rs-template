@@ -57,23 +57,24 @@ jobs:
             --define app_partition_addr=${{ matrix.app_addr }} \
             --vcs none \
             --no-workspace \
+            --destination "$RUNNER_TEMP" \
             --silent
 
       - name: Check generated project
-        working-directory: ${{ matrix.project }}
+        working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: cargo check
 
       - name: Build generated project
-        working-directory: ${{ matrix.project }}
+        working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: cargo build --release
 
       - name: Check just recipes
-        working-directory: ${{ matrix.project }}
+        working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: just --list
 
       - name: Build plan image
         if: matrix.image
-        working-directory: ${{ matrix.project }}
+        working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: |
           just image
           test -s ${{ matrix.crate }}.img
