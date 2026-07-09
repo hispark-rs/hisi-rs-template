@@ -56,6 +56,7 @@ jobs:
             --define starter=${{ matrix.starter }} \
             --define app_partition_addr=${{ matrix.app_addr }} \
             --vcs none \
+            --no-workspace \
             --silent
 
       - name: Check generated project
