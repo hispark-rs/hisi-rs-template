@@ -16,6 +16,7 @@ unit is a Git tag and GitHub Release in the template repository.
 
 | Template tag | HAL | Runtime | WS63 PAC | BS2X PAC | Image tool |
 | --- | --- | --- | --- | --- | --- |
+| `v0.6.0-rc.1` | `0.6.0-rc.1` | `0.5.1` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.0` |
 | `v0.6.0-alpha.1` | `0.6.0-alpha.1` | `0.5.1` | `0.2.1` | `0.1.2` | `hisi-fwpkg-cli 0.3.0` |
 
 ## Release checklist
@@ -34,4 +35,3 @@ unit is a Git tag and GitHub Release in the template repository.
 The parent repo pins this repository as a submodule so docs and smoke scripts can
 test the same template users generate. Do not copy template commands into parent
 docs without also adding them to the parent happy-path smoke script.
-

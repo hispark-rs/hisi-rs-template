@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.6.0-rc.1] - 2026-07-12
+
+### Changed
+
+- Generated projects now depend on `hisi-riscv-hal 0.6.0-rc.1` and
+  `ws63-pac 0.2.2`, so the template exercises the frozen HAL stable surface and
+  the PAC definitions required by the standalone HAL release.
+
 ## [0.6.0-alpha.1] - 2026-07-09
 
 ### Added
@@ -21,4 +29,3 @@ application version, not the template version.
   `hisi-riscv-rt 0.5.1`, `ws63-pac 0.2.1`, and `bs2x-pac 0.1.2`.
 - Hardware packaging documentation now installs `hisi-fwpkg-cli 0.3.0` from
   crates.io instead of using a git install.
-
