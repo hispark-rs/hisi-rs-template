@@ -8,6 +8,13 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.6.0-rc.2] - 2026-07-12
+
+### Fixed
+
+- Pin `hisi-fwpkg-cli 0.3.2`, whose FlashPlan includes linker-aligned erased
+  tails and avoids double-wrapping an already-headered application image.
+
 ## [0.6.0-rc.1] - 2026-07-12
 
 ### Changed
