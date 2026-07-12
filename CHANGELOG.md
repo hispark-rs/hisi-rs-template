@@ -8,6 +8,13 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-12
+
+### Changed
+
+- Generated WS63 and BS2X projects now use the published
+  `hisi-riscv-hal 0.6.0` stable release with `hisi-riscv-rt 0.5.3`.
+
 ## [0.6.0-rc.3] - 2026-07-12
 
 ### Changed
