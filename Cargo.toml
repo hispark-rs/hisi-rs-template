@@ -17,13 +17,13 @@ hisi-riscv-hal = { version = "0.6.0-rc.1", features = ["chip-ws63"{% if starter 
 # `boot-header` bakes the 0x300 boot header into the ELF at link time. `just flash`
 # still uses `hisi-fwpkg plan --image-output` so probe-rs writes a complete bin
 # image; `patch-hash` is reserved for ELF-based `probe-rs run`/embedded-test paths.
-hisi-riscv-rt = { version = "0.5.1", features = ["chip-ws63", "boot-header"] }
+hisi-riscv-rt = { version = "0.5.2", features = ["chip-ws63", "boot-header"] }
 ws63-pac = "0.2.2"
 {%- else %}
 # chip-bs21 covers the whole BS2X family (BS21/BS22/BS20); the chip differs only
 # in L2RAM size, set in memory.x.
 hisi-riscv-hal = { version = "0.6.0-rc.1", default-features = false, features = ["chip-bs21", "rt", "unstable"{% if starter == "async" %}, "embassy"{% endif %}] }
-hisi-riscv-rt = { version = "0.5.1", default-features = false, features = ["chip-bs21", "unstable"] }
+hisi-riscv-rt = { version = "0.5.2", default-features = false, features = ["chip-bs21", "unstable"] }
 bs2x-pac = "0.1.2"
 {%- endif %}
 riscv = "0.13"
