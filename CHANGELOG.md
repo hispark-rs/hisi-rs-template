@@ -12,9 +12,9 @@ application version, not the template version.
 
 ### Changed
 
-- Generated projects now depend on `hisi-riscv-rt 0.5.2`, which publishes the
-  WS63 RF startup memory/ROM-patch support and restores the standalone BS2X
-  feature matrix.
+- Generated projects now depend on `hisi-riscv-rt 0.5.3`, which publishes the
+  WS63 RF startup memory/ROM-patch support while keeping WS63-only relocation
+  symbols out of linked BS2X images.
 
 ## [0.6.0-rc.2] - 2026-07-12
 
