@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.1] - 2026-07-13
+
+### Changed
+
+- Generated projects now depend on the renamed `hisi-hal 0.7.0-alpha.1`
+  package and import it as `hisi_hal`. The retired `hisi-riscv-hal 0.6.x`
+  line remains available for existing applications but is no longer emitted by
+  the template.
+
 ## [0.6.0] - 2026-07-12
 
 ### Changed

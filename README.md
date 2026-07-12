@@ -2,7 +2,7 @@
 
 A bare-metal Rust application for the HiSilicon **{{chip}}** RISC-V SoC, built on
 the [ws63-rs](https://github.com/hispark-rs/hisi-riscv-rs) ecosystem
-(`hisi-riscv-hal` + `hisi-riscv-rt` + {% if chip == "ws63" %}`ws63-pac`{% else %}`bs2x-pac`{% endif %}).
+(`hisi-hal` + `hisi-riscv-rt` + {% if chip == "ws63" %}`ws63-pac`{% else %}`bs2x-pac`{% endif %}).
 
 Starter: **{{starter}}**.
 
@@ -166,7 +166,7 @@ for wiring and the vendor `burntool` / `loaderboot` UART flow.
 | File | Purpose |
 |------|---------|
 | `src/main.rs` | The `{{starter}}` application. |
-| `Cargo.toml` | Depends on `hisi-riscv-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% endif %} from crates.io. |
+| `Cargo.toml` | Depends on `hisi-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% endif %} from crates.io. |
 | `.cargo/config.toml` | RISC-V target + the `cargo run` QEMU runner. |
 | `justfile` | `just build` / `run` / `image` / `flash`{% if chip == "ws63" %} / `patch` / `run-hw`{% endif %} / `fwpkg` convenience recipes. |
 | `rust-toolchain.toml` | Pins the official nightly used by this project. |
