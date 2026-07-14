@@ -8,6 +8,13 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.2] - 2026-07-14
+
+### Changed
+
+- Generated projects now use `hisi-hal 0.7.0-alpha.2`, `hisi-riscv-rt 0.5.4`,
+  and `ws63-pac 0.3.0` so every WS63 firmware resolves one PAC major version.
+
 ## [0.7.0-alpha.1] - 2026-07-13
 
 ### Changed
