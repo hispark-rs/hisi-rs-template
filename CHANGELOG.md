@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.3] - 2026-07-17
+
+### Changed
+
+- Generated projects now use `hisi-hal 0.7.0-alpha.3`, `hisi-riscv-rt 0.5.5`,
+  and `ws63-pac 0.4.0`, preserving the single-PAC dependency contract after the
+  audited WS63 register-model release.
+
 ## [0.7.0-alpha.2] - 2026-07-14
 
 ### Changed

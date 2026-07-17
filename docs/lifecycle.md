@@ -6,7 +6,7 @@ unit is a Git tag and GitHub Release in the template repository.
 ## Versioning
 
 - Template tags use the ecosystem line they target, for example
-  `v0.7.0-alpha.2`.
+  `v0.7.0-alpha.3`.
 - The generated application's `Cargo.toml` keeps `version = "0.1.0"` because it
   belongs to the new user project.
 - A template release is cut after the referenced crates are already available on
@@ -16,6 +16,7 @@ unit is a Git tag and GitHub Release in the template repository.
 
 | Template tag | HAL package | HAL version | Runtime | WS63 PAC | BS2X PAC | Image tool |
 | --- | --- | --- | --- | --- | --- | --- |
+| `v0.7.0-alpha.3` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.5` | `0.4.0` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.2` | `hisi-hal` | `0.7.0-alpha.2` | `0.5.4` | `0.3.0` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.1` | `hisi-hal` | `0.7.0-alpha.1` | `0.5.3` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.6.0` | `hisi-riscv-hal` | `0.6.0` | `0.5.3` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |

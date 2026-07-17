@@ -13,17 +13,17 @@ path = "src/main.rs"
 {%- if chip == "ws63" %}
 # 0.5.0+ has NO default chip (esp-hal style) — every consumer names one, so
 # chip-ws63 is required here (a missing chip is a clear compile_error).
-hisi-hal = { version = "0.7.0-alpha.2", features = ["chip-ws63"{% if starter == "async" %}, "embassy", "unstable"{% endif %}] }
+hisi-hal = { version = "0.7.0-alpha.3", features = ["chip-ws63"{% if starter == "async" %}, "embassy", "unstable"{% endif %}] }
 # `boot-header` bakes the 0x300 boot header into the ELF at link time. `just flash`
 # still uses `hisi-fwpkg plan --image-output` so probe-rs writes a complete bin
 # image; `patch-hash` is reserved for ELF-based `probe-rs run`/embedded-test paths.
-hisi-riscv-rt = { version = "0.5.4", features = ["chip-ws63", "boot-header"] }
-ws63-pac = "0.3.0"
+hisi-riscv-rt = { version = "0.5.5", features = ["chip-ws63", "boot-header"] }
+ws63-pac = "0.4.0"
 {%- else %}
 # chip-bs21 covers the whole BS2X family (BS21/BS22/BS20); the chip differs only
 # in L2RAM size, set in memory.x.
-hisi-hal = { version = "0.7.0-alpha.2", default-features = false, features = ["chip-bs21", "rt", "unstable"{% if starter == "async" %}, "embassy"{% endif %}] }
-hisi-riscv-rt = { version = "0.5.4", default-features = false, features = ["chip-bs21", "unstable"] }
+hisi-hal = { version = "0.7.0-alpha.3", default-features = false, features = ["chip-bs21", "rt", "unstable"{% if starter == "async" %}, "embassy"{% endif %}] }
+hisi-riscv-rt = { version = "0.5.5", default-features = false, features = ["chip-bs21", "unstable"] }
 bs2x-pac = "0.1.2"
 {%- endif %}
 riscv = "0.13"
