@@ -14,16 +14,17 @@ unit is a Git tag and GitHub Release in the template repository.
 
 ## Compatibility matrix
 
-| Template tag | HAL package | HAL version | Runtime | WS63 PAC | BS2X PAC | Image tool |
-| --- | --- | --- | --- | --- | --- | --- |
-| `v0.7.0-alpha.3` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.5` | `0.4.0` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
-| `v0.7.0-alpha.2` | `hisi-hal` | `0.7.0-alpha.2` | `0.5.4` | `0.3.0` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
-| `v0.7.0-alpha.1` | `hisi-hal` | `0.7.0-alpha.1` | `0.5.3` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
-| `v0.6.0` | `hisi-riscv-hal` | `0.6.0` | `0.5.3` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
-| `v0.6.0-rc.3` | `hisi-riscv-hal` | `0.6.0-rc.1` | `0.5.3` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
-| `v0.6.0-rc.2` | `hisi-riscv-hal` | `0.6.0-rc.1` | `0.5.1` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.2` |
-| `v0.6.0-rc.1` | `hisi-riscv-hal` | `0.6.0-rc.1` | `0.5.1` | `0.2.2` | `0.1.2` | `hisi-fwpkg-cli 0.3.0` |
-| `v0.6.0-alpha.1` | `hisi-riscv-hal` | `0.6.0-alpha.1` | `0.5.1` | `0.2.1` | `0.1.2` | `hisi-fwpkg-cli 0.3.0` |
+| Template tag | HAL package | HAL version | Runtime | WS63 PAC | BS2X PAC | RF facade | Image tool |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `v0.7.0-alpha.4` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.5` + `hisi-rtos 0.1.0-alpha.10` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.14` | `hisi-fwpkg-cli 0.3.2` |
+| `v0.7.0-alpha.3` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.5` | `0.4.0` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.2` |
+| `v0.7.0-alpha.2` | `hisi-hal` | `0.7.0-alpha.2` | `0.5.4` | `0.3.0` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.2` |
+| `v0.7.0-alpha.1` | `hisi-hal` | `0.7.0-alpha.1` | `0.5.3` | `0.2.2` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.2` |
+| `v0.6.0` | `hisi-riscv-hal` | `0.6.0` | `0.5.3` | `0.2.2` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.2` |
+| `v0.6.0-rc.3` | `hisi-riscv-hal` | `0.6.0-rc.1` | `0.5.3` | `0.2.2` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.2` |
+| `v0.6.0-rc.2` | `hisi-riscv-hal` | `0.6.0-rc.1` | `0.5.1` | `0.2.2` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.2` |
+| `v0.6.0-rc.1` | `hisi-riscv-hal` | `0.6.0-rc.1` | `0.5.1` | `0.2.2` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.0` |
+| `v0.6.0-alpha.1` | `hisi-riscv-hal` | `0.6.0-alpha.1` | `0.5.1` | `0.2.1` | `0.1.2` | - | `hisi-fwpkg-cli 0.3.0` |
 
 ## Release checklist
 

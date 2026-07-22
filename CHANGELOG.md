@@ -8,6 +8,12 @@ application version, not the template version.
 
 ## [Unreleased]
 
+### Added
+
+- Added a WS63 `wifi` starter using only the public `hisi-rf` facade for radio
+  composition. It starts the caller-owned runner, performs async
+  initialize/scan/WPA2 connect, and hands the L2 device to smoltcp DHCP.
+
 ### Fixed
 
 - Removed the generated `python3` dependency from `just flash`; the download

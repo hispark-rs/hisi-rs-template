@@ -14,7 +14,7 @@ default = "ws63"
 [placeholders.starter]
 type = "string"
 prompt = "Starter app"
-choices = ["blinky", "uart_hello", "async"]
+choices = ["blinky", "uart_hello", "async", "wifi"]
 default = "blinky"
 
 # Optional flash address override for the `app` partition that flashboot loads.
@@ -30,6 +30,9 @@ default = "blinky"
 # WS63 gets its memory layout from hisi-riscv-rt's bundled linker scripts, so a
 # project-level memory.x is only needed for the BS2X family.
 ignore = ["memory.x"]
+
+[conditional.'starter != "wifi"']
+ignore = ["src/wifi.rs"]
 
 [conditional.'chip == "ws63"'.placeholders.app_partition_addr]
 type = "string"

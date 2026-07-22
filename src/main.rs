@@ -244,4 +244,20 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
         core::hint::spin_loop();
     }
 }
-{%- endcase -%}
+{%- when "wifi" -%}
+#![no_std]
+#![no_main]
+
+{% if chip == "ws63" -%}
+include!("wifi.rs");
+{%- else -%}
+compile_error!("the wifi starter currently supports only chip=ws63");
+
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {
+        core::hint::spin_loop();
+    }
+}
+{%- endif %}
+{%- endcase %}

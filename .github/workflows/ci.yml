@@ -8,6 +8,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Compile-time fixtures only. Real network credentials never enter CI or the
+  # template repository; users inject them for their own final firmware image.
+  WS63_WIFI_SSID: ci-network
+  WS63_WIFI_PASSPHRASE: ci-passphrase
 
 jobs:
   generate:
@@ -27,6 +31,12 @@ jobs:
             starter: uart_hello
             project: hp-ws63-uart-hello
             crate: hp_ws63_uart_hello
+            app_addr: "0x00230000"
+            image: true
+          - chip: ws63
+            starter: wifi
+            project: hp-ws63-wifi
+            crate: hp_ws63_wifi
             app_addr: "0x00230000"
             image: true
           - chip: bs21

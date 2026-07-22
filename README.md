@@ -24,7 +24,7 @@ Starter: **{{starter}}**.
 
    `rust-toolchain.toml` already pins this nightly, so cargo picks it up here.
 
-2. **QEMU** (for `cargo run`) — the [hisi-riscv-qemu](https://github.com/hispark-rs/hisi-riscv-qemu)
+{% if starter != "wifi" %}2. **QEMU** (for `cargo run`) — the [hisi-riscv-qemu](https://github.com/hispark-rs/hisi-riscv-qemu)
    fork, which adds the `-M {{chip}}` machine. Build it and put its
    `qemu-system-riscv32` on your `PATH`:
 
@@ -32,17 +32,40 @@ Starter: **{{starter}}**.
    git clone https://github.com/hispark-rs/hisi-riscv-qemu && cd hisi-riscv-qemu
    ./scripts/build.sh
    ```
+{% endif %}
 
 ## Build
 
 ```bash
+{% if starter == "wifi" %}WS63_WIFI_SSID='your-network' WS63_WIFI_PASSPHRASE='your-passphrase' \
+    cargo build -Zbuild-std=core,alloc --release
+{% else %}
 cargo build -Zbuild-std=core,alloc --release
+{% endif %}
 ```
 
 The target (`riscv32imfc-unknown-none-elf`) and the linker wiring (`-Thisi-riscv-link.x`)
 are configured in `.cargo/config.toml` + `build.rs`. Use `just build` if you
 prefer not to type the build-std flag.
 
+{% if starter == "wifi" %}
+## Run on WS63
+
+The RF payload calls the WS63 mask ROM, so QEMU can compile this starter but
+cannot execute its radio path. Build credentials are embedded only in the final
+firmware image through temporary environment variables; they are not stored in
+the generated source:
+
+```bash
+WS63_WIFI_SSID='your-network' WS63_WIFI_PASSPHRASE='your-passphrase' just flash
+```
+
+The application starts the native RTOS port, claims the named
+`profile-wifi-wpa2-smoltcp` resources, starts the storage-bound radio runner,
+then performs initialize, scan and connect before handing `WifiDevice` to a
+long-lived smoltcp DHCP loop. Expected UART markers are `WIFI_INIT_OK`,
+`WIFI_SCAN_OK`, `WIFI_CONNECT_OK`, and finally `WIFI_DHCP_OK`.
+{% else %}
 ## Run (QEMU)
 
 ```bash
@@ -75,12 +98,17 @@ Expected: two async tasks interleave on the embassy executor:
 ...
 ```
 {% endif %}
+{% endif %}
 ## Flash to hardware
 
-> Validated end-to-end on real {% if chip == "ws63" %}WS63{% else %}{{chip}}{% endif %} silicon
+{% if starter == "wifi" %}> The generated project's build and image contracts are CI-validated. On real WS63
+> silicon, treat the four UART markers above as the end-to-end HIL acceptance
+> gate; do not infer radio success from a successful build alone.
+{% else %}> Validated end-to-end on real {% if chip == "ws63" %}WS63{% else %}{{chip}}{% endif %} silicon
 > (blinky boots + blinks, 2026-06-14){% if chip != "ws63" %} for WS63; the BS2X address
 > below is `hisi-fwpkg`'s default and is **not yet HIL-validated** — confirm it
 > against your `fbb_bs2x` partition table first{% endif %}.
+{% endif %}
 
 A bare ELF/`.bin` does **not** boot. flashboot loads the app partition at flash
 `{{app_partition_addr}}` and jumps **unconditionally** to `{{app_partition_addr}} + 0x300`,
@@ -165,7 +193,8 @@ for wiring and the vendor `burntool` / `loaderboot` UART flow.
 | File | Purpose |
 |------|---------|
 | `src/main.rs` | The `{{starter}}` application. |
-| `Cargo.toml` | Depends on `hisi-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% endif %} from crates.io. |
+{% if starter == "wifi" %}| `src/wifi.rs` | The WS63 radio/runtime/smoltcp happy path; credentials come only from build environment variables. |
+{% endif %}| `Cargo.toml` | Depends on `hisi-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% elsif starter == "wifi" %} + `hisi-rf` / `hisi-rtos` / smoltcp{% endif %} from crates.io. |
 | `.cargo/config.toml` | RISC-V target + the `cargo run` QEMU runner. |
 | `justfile` | `just build` / `run` / `image` / `flash`{% if chip == "ws63" %} / `patch` / `run-hw`{% endif %} / `fwpkg` convenience recipes. |
 | `rust-toolchain.toml` | Pins the official nightly used by this project. |

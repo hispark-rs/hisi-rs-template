@@ -43,8 +43,13 @@ build:
     cargo build {{build_std}} --release
 
 # Run in QEMU (the hisi-riscv-qemu fork; Ctrl-A then X to quit).
+{% endraw %}{% if starter == "wifi" %}{% raw %}
+run: build
+    @echo "Wi-Fi needs a real WS63; use 'just flash'"
+{% endraw %}{% else %}{% raw %}
 run:
     cargo run {{build_std}} --release
+{% endraw %}{% endif %}{% raw %}
 
 {% endraw %}{% if chip == "ws63" %}{% raw %}
 # With the `boot-header` feature the 0x300 HiSilicon header is baked into the ELF
