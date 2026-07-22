@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.5] - 2026-07-23
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.16`, including
+  source-aware diagnostics and checked aligned RF heap allocations.
+
+## [0.7.0-alpha.4] - 2026-07-23
+
 ### Added
 
 - Added a WS63 `wifi` starter using only the public `hisi-rf` facade for radio
