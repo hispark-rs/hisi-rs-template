@@ -140,10 +140,9 @@ hisi-fwpkg plan target/riscv32imfc-unknown-none-elf/release/{{crate_name}} \
     --image-output {{crate_name}}.img \
     > {{crate_name}}.plan.json
 
-BASE_ADDR=$(python3 -c 'import json; print(json.load(open("{{crate_name}}.plan.json"))["base_addr"])')
 probe-rs download --chip {{chip | upcase}} \
     --chip-description-path HiSilicon_WS63.yaml \
-    --binary-format bin --base-address "$BASE_ADDR" {{crate_name}}.img
+    --binary-format bin --base-address {{app_partition_addr}} {{crate_name}}.img
 probe-rs reset --chip {{chip | upcase}} \
     --chip-description-path HiSilicon_WS63.yaml
 ```

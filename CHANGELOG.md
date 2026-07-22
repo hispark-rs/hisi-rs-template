@@ -8,6 +8,11 @@ application version, not the template version.
 
 ## [Unreleased]
 
+### Fixed
+
+- Removed the generated `python3` dependency from `just flash`; the download
+  address now uses the same explicit app address passed into `hisi-fwpkg plan`.
+
 ## [0.7.0-alpha.3] - 2026-07-17
 
 ### Changed

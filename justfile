@@ -74,7 +74,7 @@ image: build
 # Flash {{img}} to the plan base address via the PATCHED probe-rs fork, then reset.
 flash: image
     probe-rs download --chip {{CHIP}} --chip-description-path {{CHIP_DESC}} \
-        --binary-format bin --base-address $(python3 -c 'import json; print(json.load(open("{{plan}}"))["base_addr"])') {{img}}
+        --binary-format bin --base-address {{APP_ADDR}} {{img}}
     probe-rs reset --chip {{CHIP}} --chip-description-path {{CHIP_DESC}}
 
 # hisi-fwpkg picks the per-chip app address itself; no probe-rs fork needed.
