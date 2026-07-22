@@ -1,6 +1,7 @@
 // WS63 Wi-Fi happy path through the public hisi-rf facade.
 
 use core::cell::UnsafeCell;
+use core::fmt;
 use core::future::Future;
 use core::num::NonZeroU32;
 use core::task::{Context, Poll, Waker};
@@ -17,8 +18,7 @@ use hisi_hal::uart::{Config as UartConfig, Uart, UartClock};
 use hisi_hal::wdt::Watchdog;
 use hisi_panic_handler as _;
 use hisi_rf::{
-    Error as RadioError, Passphrase, RadioConfig, ScanConfig, ScanResult, StationConfig,
-    WifiDevice,
+    Error as RadioError, Passphrase, RadioConfig, ScanConfig, ScanResult, StationConfig, WifiDevice,
 };
 use hisi_riscv_rt::entry;
 use smoltcp::iface::{Config as InterfaceConfig, Interface, SocketSet, SocketStorage};
@@ -41,6 +41,23 @@ const WIFI_PASSPHRASE: &[u8] = match option_env!("WS63_WIFI_PASSPHRASE") {
 };
 
 type Uart0<'a> = Uart<'a, hisi_hal::peripherals::Uart0<'a>>;
+
+struct DiagnosticWriter<'a, 'd>(&'a Uart0<'d>);
+
+impl fmt::Write for DiagnosticWriter<'_, '_> {
+    fn write_str(&mut self, value: &str) -> fmt::Result {
+        self.0.write(value.as_bytes());
+        Ok(())
+    }
+}
+
+fn fail_with_radio_diagnostic(uart: &Uart0<'_>, diagnostic: hisi_rf::Diagnostic) -> ! {
+    uart.write(b"WIFI_ERROR ");
+    let mut writer = DiagnosticWriter(uart);
+    let _ = diagnostic.write_json(&mut writer);
+    uart.write(b"\r\n");
+    panic!("Wi-Fi operation failed")
+}
 
 #[repr(C, align(16))]
 struct RtosArena(UnsafeCell<[u8; RTOS_ARENA_BYTES]>);
@@ -132,8 +149,7 @@ fn write_ipv4(uart: &Uart0<'_>, address: [u8; 4]) {
 }
 
 fn run_smoltcp<D: Device>(uart: &Uart0<'_>, mut device: WifiDevice<D>, mac: [u8; 6]) -> ! {
-    let mut config =
-        InterfaceConfig::new(HardwareAddress::Ethernet(EthernetAddress(mac)));
+    let mut config = InterfaceConfig::new(HardwareAddress::Ethernet(EthernetAddress(mac)));
     config.random_seed = monotonic_ms();
     let mut interface = Interface::new(config, &mut device, network_now());
     let mut socket_storage = [SocketStorage::EMPTY; 1];
@@ -229,10 +245,14 @@ fn main() -> ! {
     unsafe { interrupt::enable_global() };
 
     let resources = hisi_rf::ws63::Resources::new(efuse, p.KM, p.SPACC, p.PKE, p.TRNG);
-    let mut wifi = hisi_rf::ws63::init(RadioConfig::default(), resources, &RADIO_STORAGE)
-        .expect("claim radio resources")
-        .start_runner()
-        .expect("start radio runner");
+    let controller = match hisi_rf::ws63::init(RadioConfig::default(), resources, &RADIO_STORAGE) {
+        Ok(controller) => controller,
+        Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
+    };
+    let mut wifi = match controller.start_runner() {
+        Ok(wifi) => wifi,
+        Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
+    };
 
     let result = block_on_radio(async {
         wifi.controller.initialize().await?;
@@ -241,21 +261,25 @@ fn main() -> ! {
         let mut results = [ScanResult::empty(); SCAN_CAPACITY];
         let outcome = wifi
             .controller
-            .scan(ScanConfig::try_from_timeout_ms(15_000).unwrap(), &mut results)
+            .scan(
+                ScanConfig::try_from_timeout_ms(15_000).unwrap(),
+                &mut results,
+            )
             .await?;
         uart.write(b"WIFI_SCAN_OK\r\n");
 
-        let selected = select_network(&results[..outcome.count], WIFI_SSID)
-            .ok_or(RadioError::Protocol)?;
-        let passphrase =
-            Passphrase::try_from_ascii(WIFI_PASSPHRASE).ok_or(RadioError::Protocol)?;
+        let selected =
+            select_network(&results[..outcome.count], WIFI_SSID).ok_or(RadioError::Protocol)?;
+        let passphrase = Passphrase::try_from_ascii(WIFI_PASSPHRASE).ok_or(RadioError::Protocol)?;
         let station = StationConfig::wpa2_personal(selected, passphrase, 60_000)
             .ok_or(RadioError::Protocol)?;
         wifi.controller.connect(station).await?;
         uart.write(b"WIFI_CONNECT_OK\r\n");
         Ok::<(), RadioError>(())
     });
-    result.expect("Wi-Fi control-plane operation failed");
+    if let Err(error) = result {
+        fail_with_radio_diagnostic(&uart, error.diagnostic());
+    }
 
     let mac = hisi_rf::ws63::station_mac_address().expect("station MAC unavailable after init");
     run_smoltcp(&uart, wifi.device, mac)

@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.6] - 2026-07-23
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.17` and
+  `hisi-alloc 0.1.0-alpha.2`.
+- Wi-Fi initialization, runner startup, and control-plane failures now emit the
+  stable `hisi-rf-error/v2` JSON diagnostic before entering the panic handler.
+
 ## [0.7.0-alpha.5] - 2026-07-23
 
 ### Changed
