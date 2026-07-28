@@ -1,7 +1,7 @@
-use hisi_rf::ws63::{SelectedProfile, Storage};
 use std::{env, fs, process};
 
 const EVENT_CAPACITY: usize = 8;
+hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE, events = EVENT_CAPACITY);
 
 fn main() {
     let mut args = env::args_os();
@@ -15,9 +15,8 @@ fn main() {
         process::exit(2);
     }
 
-    let storage = Storage::<SelectedProfile, EVENT_CAPACITY>::new();
     let mut output = String::new();
-    storage
+    RADIO_STORAGE
         .report()
         .write_json(&mut output)
         .expect("String writes are infallible");

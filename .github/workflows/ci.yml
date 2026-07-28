@@ -92,9 +92,12 @@ jobs:
           test -s ${{ matrix.crate }}.plan.json
           if [ "${{ matrix.starter }}" = "wifi" ]; then
             test -s ${{ matrix.crate }}.resource.json
-            grep -q '"schema":"hisi-rf-resource-report/v5"' ${{ matrix.crate }}.resource.json
+            grep -q '"schema":"hisi-rf-resource-report/v6"' ${{ matrix.crate }}.resource.json
             grep -q '"profile":"wifi-wpa2-smoltcp"' ${{ matrix.crate }}.resource.json
             grep -q '"event_capacity":8' ${{ matrix.crate }}.resource.json
+            grep -q '"control_storage_bytes":8544' ${{ matrix.crate }}.resource.json
+            grep -q '"radio_state_bytes":2168' ${{ matrix.crate }}.resource.json
+            grep -q '"arena_storage_bytes":303168' ${{ matrix.crate }}.resource.json
           fi
 
   wifi-resource-report:

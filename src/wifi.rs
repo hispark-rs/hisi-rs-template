@@ -55,19 +55,25 @@ fn fail_with_radio_diagnostic(uart: &Uart0<'_>, diagnostic: hisi_rf::Diagnostic)
     panic!("Wi-Fi operation failed")
 }
 
-static RADIO_STORAGE: hisi_rf::ws63::Storage<hisi_rf::ws63::SelectedProfile, EVENT_CAPACITY> =
-    hisi_rf::ws63::Storage::new();
-hisi_rf::ws63::declare_radio_arena!(static RADIO_ARENA);
+hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE, events = EVENT_CAPACITY);
 
 unsafe fn rtos_allocate(size: usize) -> *mut u8 {
     // SAFETY: hisi-rtos releases this allocation through `rtos_deallocate`.
-    unsafe { hisi_rf::ws63::InstalledRadioArena::<hisi_rf::ws63::SelectedProfile>::allocate(size) }
+    unsafe {
+        hisi_rf::ws63::InstalledRadioStorage::<
+            hisi_rf::ws63::SelectedProfile,
+            EVENT_CAPACITY,
+        >::allocate(size)
+    }
 }
 
 unsafe fn rtos_deallocate(pointer: *mut u8) {
     // SAFETY: hisi-rtos only returns pointers obtained through rtos_allocate.
     unsafe {
-        hisi_rf::ws63::InstalledRadioArena::<hisi_rf::ws63::SelectedProfile>::deallocate(pointer)
+        hisi_rf::ws63::InstalledRadioStorage::<
+            hisi_rf::ws63::SelectedProfile,
+            EVENT_CAPACITY,
+        >::deallocate(pointer)
     };
 }
 
@@ -198,10 +204,9 @@ fn main() -> ! {
     let mut tcxo = hisi_hal::tcxo::TcxoDriver::new(p.TCXO);
     tcxo.enable();
 
-    let radio_arena = RADIO_ARENA
-        .claim_for::<hisi_rf::ws63::SelectedProfile>()
-        .and_then(|arena| arena.install())
-        .expect("install shared RF arena");
+    let installed_storage = RADIO_STORAGE
+        .install()
+        .expect("install caller-owned radio storage");
 
     let mut delay = Delay::new();
     let rf_ready = RfPower::new(p.CMU, p.CLDO_CRG).enable(p.EFUSE, &mut delay);
@@ -233,11 +238,12 @@ fn main() -> ! {
     // trap path, so global interrupts must be enabled before radio tasks spawn.
     unsafe { interrupt::enable_global() };
 
+    let (control_storage, radio_arena) = installed_storage.into_init_parts();
     let resources =
         hisi_rf::ws63::Resources::<hisi_rf::ws63::SelectedProfile>::builder(efuse, radio_arena)
             .crypto(p.KM, p.SPACC, p.TRNG)
             .build();
-    let controller = match hisi_rf::ws63::init(RadioConfig::default(), resources, &RADIO_STORAGE) {
+    let controller = match hisi_rf::ws63::init(RadioConfig::default(), resources, control_storage) {
         Ok(controller) => controller,
         Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
     };

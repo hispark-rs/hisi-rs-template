@@ -8,6 +8,18 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.13] - 2026-07-29
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.52` and replaced its
+  separate control-storage and shared-arena statics with one
+  `declare_radio_storage!` composition and pre-RTOS admission step.
+- Updated generated resource-report tooling and CI to
+  `hisi-rf-resource-report/v6`, including the control, composition-handle, and
+  shared-arena ownership split measured for the WS63 RV32 target rather than
+  the host running the report helper.
+
 ## [0.7.0-alpha.12] - 2026-07-29
 
 ### Changed
