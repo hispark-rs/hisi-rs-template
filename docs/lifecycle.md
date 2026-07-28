@@ -16,6 +16,7 @@ unit is a Git tag and GitHub Release in the template repository.
 
 | Template tag | HAL package | HAL version | Runtime | WS63 PAC | BS2X PAC | RF facade | Image tool |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| `v0.7.0-alpha.7` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.7` + `hisi-rtos 0.1.0-alpha.13` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.37` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.6` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.5` + `hisi-rtos 0.1.0-alpha.10` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.17` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.5` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.5` + `hisi-rtos 0.1.0-alpha.10` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.16` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.4` | `hisi-hal` | `0.7.0-alpha.3` | `0.5.5` + `hisi-rtos 0.1.0-alpha.10` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.14` | `hisi-fwpkg-cli 0.3.2` |

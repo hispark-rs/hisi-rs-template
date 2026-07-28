@@ -8,6 +8,18 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.7] - 2026-07-28
+
+### Changed
+
+- Updated generated projects to `hisi-riscv-rt 0.5.7`.
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.37` and
+  `hisi-rtos 0.1.0-alpha.13`. The application now declares and installs the
+  profile-selected caller-owned RF arena through the public facade before
+  starting the runtime.
+- Enabled the fixed 32 KiB radio main-stack linker profile for Wi-Fi firmware
+  and removed the application's obsolete direct `hisi-alloc` dependency.
+
 ## [0.7.0-alpha.6] - 2026-07-23
 
 ### Changed

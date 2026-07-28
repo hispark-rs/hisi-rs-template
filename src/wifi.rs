@@ -1,12 +1,10 @@
 // WS63 Wi-Fi happy path through the public hisi-rf facade.
 
-use core::cell::UnsafeCell;
 use core::fmt;
 use core::future::Future;
 use core::num::NonZeroU32;
 use core::task::{Context, Poll, Waker};
 
-use hisi_alloc::CHeap;
 use hisi_hal::Peripherals;
 use hisi_hal::delay::Delay;
 use hisi_hal::interrupt;
@@ -29,7 +27,6 @@ use smoltcp::wire::{EthernetAddress, HardwareAddress, IpCidr};
 
 const EVENT_CAPACITY: usize = 8;
 const SCAN_CAPACITY: usize = 16;
-const RTOS_ARENA_BYTES: usize = 192 * 1024;
 
 const WIFI_SSID: &[u8] = match option_env!("WS63_WIFI_SSID") {
     Some(value) => value.as_bytes(),
@@ -59,25 +56,20 @@ fn fail_with_radio_diagnostic(uart: &Uart0<'_>, diagnostic: hisi_rf::Diagnostic)
     panic!("Wi-Fi operation failed")
 }
 
-#[repr(C, align(16))]
-struct RtosArena(UnsafeCell<[u8; RTOS_ARENA_BYTES]>);
-
-// SAFETY: CHeap serializes all access. The arena is initialized exactly once
-// before global interrupts and radio worker tasks are enabled.
-unsafe impl Sync for RtosArena {}
-
-static RTOS_ARENA: RtosArena = RtosArena(UnsafeCell::new([0; RTOS_ARENA_BYTES]));
-static RTOS_HEAP: CHeap = CHeap::empty();
 static RADIO_STORAGE: hisi_rf::ws63::Storage<hisi_rf::ws63::SelectedProfile, EVENT_CAPACITY> =
     hisi_rf::ws63::Storage::new();
+hisi_rf::ws63::declare_radio_arena!(static RADIO_ARENA);
 
 unsafe fn rtos_allocate(size: usize) -> *mut u8 {
-    RTOS_HEAP.allocate_zeroed(size, 16)
+    // SAFETY: hisi-rtos releases this allocation through `rtos_deallocate`.
+    unsafe { hisi_rf::ws63::InstalledRadioArena::<hisi_rf::ws63::SelectedProfile>::allocate(size) }
 }
 
 unsafe fn rtos_deallocate(pointer: *mut u8) {
     // SAFETY: hisi-rtos only returns pointers obtained through rtos_allocate.
-    let _ = unsafe { RTOS_HEAP.deallocate(pointer) };
+    unsafe {
+        hisi_rf::ws63::InstalledRadioArena::<hisi_rf::ws63::SelectedProfile>::deallocate(pointer)
+    };
 }
 
 fn monotonic_ms() -> u64 {
@@ -207,12 +199,10 @@ fn main() -> ! {
     let mut tcxo = hisi_hal::tcxo::TcxoDriver::new(p.TCXO);
     tcxo.enable();
 
-    // SAFETY: the static arena is uniquely initialized before task creation.
-    unsafe {
-        RTOS_HEAP
-            .init((*RTOS_ARENA.0.get()).as_mut_ptr(), RTOS_ARENA_BYTES)
-            .expect("initialize RTOS arena");
-    }
+    let radio_arena = RADIO_ARENA
+        .claim_for::<hisi_rf::ws63::SelectedProfile>()
+        .and_then(|arena| arena.install())
+        .expect("install shared RF arena");
 
     let mut delay = Delay::new();
     let rf_ready = RfPower::new(p.CMU, p.CLDO_CRG).enable(p.EFUSE, &mut delay);
@@ -244,7 +234,7 @@ fn main() -> ! {
     // trap path, so global interrupts must be enabled before radio tasks spawn.
     unsafe { interrupt::enable_global() };
 
-    let resources = hisi_rf::ws63::Resources::new(efuse, p.KM, p.SPACC, p.PKE, p.TRNG);
+    let resources = hisi_rf::ws63::Resources::new(efuse, p.KM, p.SPACC, p.PKE, p.TRNG, radio_arena);
     let controller = match hisi_rf::ws63::init(RadioConfig::default(), resources, &RADIO_STORAGE) {
         Ok(controller) => controller,
         Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),

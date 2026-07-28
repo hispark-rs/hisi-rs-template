@@ -17,13 +17,13 @@ hisi-hal = { version = "0.7.0-alpha.3", features = ["chip-ws63"{% if starter == 
 # `boot-header` bakes the 0x300 boot header into the ELF at link time. `just flash`
 # still uses `hisi-fwpkg plan --image-output` so probe-rs writes a complete bin
 # image; `patch-hash` is reserved for ELF-based `probe-rs run`/embedded-test paths.
-hisi-riscv-rt = { version = "0.5.5", features = ["chip-ws63", "boot-header"{% if starter == "wifi" %}, "ws63-bgle-32k"{% endif %}] }
+hisi-riscv-rt = { version = "0.5.7", features = ["chip-ws63", "boot-header"{% if starter == "wifi" %}, "ws63-bgle-32k", "ws63-radio-main-stack-32k"{% endif %}] }
 ws63-pac = "0.4.0"
 {%- else %}
 # chip-bs21 covers the whole BS2X family (BS21/BS22/BS20); the chip differs only
 # in L2RAM size, set in memory.x.
 hisi-hal = { version = "0.7.0-alpha.3", default-features = false, features = ["chip-bs21", "rt", "unstable"{% if starter == "async" %}, "embassy"{% endif %}] }
-hisi-riscv-rt = { version = "0.5.5", default-features = false, features = ["chip-bs21", "unstable"] }
+hisi-riscv-rt = { version = "0.5.7", default-features = false, features = ["chip-bs21", "unstable"] }
 bs2x-pac = "0.1.2"
 {%- endif %}
 riscv = "0.13"
@@ -36,10 +36,9 @@ embassy-time = { version = "0.5", features = ["tick-hz-1_000_000"] }
 static_cell = "2"
 {%- endif %}
 {%- if starter == "wifi" and chip == "ws63" %}
-hisi-alloc = "0.1.0-alpha.2"
 hisi-panic-handler = { version = "0.1.0", default-features = false, features = ["panic-uart0"] }
-hisi-rf = { version = "0.1.0-alpha.17", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
-hisi-rtos = "0.1.0-alpha.10"
+hisi-rf = { version = "0.1.0-alpha.37", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
+hisi-rtos = "0.1.0-alpha.13"
 smoltcp = { version = "0.13", default-features = false, features = ["medium-ethernet", "proto-ipv4", "socket-dhcpv4"] }
 {%- endif %}
 
