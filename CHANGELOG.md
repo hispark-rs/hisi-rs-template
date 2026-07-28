@@ -8,6 +8,8 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.9] - 2026-07-28
+
 ### Added
 
 - The WS63 Wi-Fi starter now emits a deterministic
@@ -18,6 +20,12 @@ application version, not the template version.
 ### Changed
 
 - Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.41`.
+
+### Fixed
+
+- The host-only resource-report helper now installs the standard host
+  `critical-section` implementation, so its public-facade dependency graph
+  links on native Windows as well as macOS and Linux.
 
 ## [0.7.0-alpha.8] - 2026-07-28
 
