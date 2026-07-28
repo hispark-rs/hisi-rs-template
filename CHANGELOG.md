@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.10] - 2026-07-28
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.42`, carrying the
+  incremental local-continuation fix through the public facade and keeping the
+  caller-owned arena composition contract covered by the generated project.
+
 ## [0.7.0-alpha.9] - 2026-07-28
 
 ### Added
