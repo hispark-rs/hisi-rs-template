@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.8] - 2026-07-28
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.38`, carrying
+  actionable `hisi-rf-error/v2` diagnostics for caller-owned RF arena
+  admission failures.
+
 ## [0.7.0-alpha.7] - 2026-07-28
 
 ### Changed
