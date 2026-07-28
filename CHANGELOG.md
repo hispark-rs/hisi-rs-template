@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.12] - 2026-07-29
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.49` and moved
+  profile-specific hardware ownership into the starter's resource builder.
+  The default WPA2 project no longer consumes an unused PKE token.
+
 ## [0.7.0-alpha.11] - 2026-07-29
 
 ### Changed

@@ -233,7 +233,10 @@ fn main() -> ! {
     // trap path, so global interrupts must be enabled before radio tasks spawn.
     unsafe { interrupt::enable_global() };
 
-    let resources = hisi_rf::ws63::Resources::new(efuse, p.KM, p.SPACC, p.PKE, p.TRNG, radio_arena);
+    let resources =
+        hisi_rf::ws63::Resources::<hisi_rf::ws63::SelectedProfile>::builder(efuse, radio_arena)
+            .crypto(p.KM, p.SPACC, p.TRNG)
+            .build();
     let controller = match hisi_rf::ws63::init(RadioConfig::default(), resources, &RADIO_STORAGE) {
         Ok(controller) => controller,
         Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
