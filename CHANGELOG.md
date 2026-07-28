@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.14] - 2026-07-29
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.53`. Event capacity
+  remains part of the selected profile's machine-readable resource report, but
+  no longer appears in application control types or storage declarations.
+
 ## [0.7.0-alpha.13] - 2026-07-29
 
 ### Changed

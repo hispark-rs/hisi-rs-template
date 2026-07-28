@@ -1,7 +1,6 @@
 use std::{env, fs, process};
 
-const EVENT_CAPACITY: usize = 8;
-hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE, events = EVENT_CAPACITY);
+hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE);
 
 fn main() {
     let mut args = env::args_os();

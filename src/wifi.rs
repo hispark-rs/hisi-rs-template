@@ -24,7 +24,6 @@ use smoltcp::socket::dhcpv4;
 use smoltcp::time::Instant as NetworkInstant;
 use smoltcp::wire::{EthernetAddress, HardwareAddress, IpCidr};
 
-const EVENT_CAPACITY: usize = 8;
 const SCAN_CAPACITY: usize = 16;
 
 const WIFI_SSID: &[u8] = match option_env!("WS63_WIFI_SSID") {
@@ -55,25 +54,19 @@ fn fail_with_radio_diagnostic(uart: &Uart0<'_>, diagnostic: hisi_rf::Diagnostic)
     panic!("Wi-Fi operation failed")
 }
 
-hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE, events = EVENT_CAPACITY);
+hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE);
 
 unsafe fn rtos_allocate(size: usize) -> *mut u8 {
     // SAFETY: hisi-rtos releases this allocation through `rtos_deallocate`.
     unsafe {
-        hisi_rf::ws63::InstalledRadioStorage::<
-            hisi_rf::ws63::SelectedProfile,
-            EVENT_CAPACITY,
-        >::allocate(size)
+        hisi_rf::ws63::InstalledRadioStorage::allocate(size)
     }
 }
 
 unsafe fn rtos_deallocate(pointer: *mut u8) {
     // SAFETY: hisi-rtos only returns pointers obtained through rtos_allocate.
     unsafe {
-        hisi_rf::ws63::InstalledRadioStorage::<
-            hisi_rf::ws63::SelectedProfile,
-            EVENT_CAPACITY,
-        >::deallocate(pointer)
+        hisi_rf::ws63::InstalledRadioStorage::deallocate(pointer)
     };
 }
 
