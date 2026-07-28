@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main, master]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -123,3 +124,44 @@ jobs:
       - name: Emit profile resource report
         working-directory: ${{ runner.temp }}/hp-ws63-wifi
         run: just resource-report
+
+  release:
+    name: Publish template release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [generate, wifi-resource-report]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          grep -Eq "^## \\[$version\\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" CHANGELOG.md
+          grep -Fq "| \`$GITHUB_REF_NAME\` |" docs/lifecycle.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists"
+            exit 0
+          fi
+
+          release_kind=(--latest)
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            release_kind=(--prerelease)
+          fi
+
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "hisi-rs-template $GITHUB_REF_NAME" \
+            --generate-notes \
+            "${release_kind[@]}"
