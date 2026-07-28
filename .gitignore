@@ -4,3 +4,6 @@ Cargo.lock
 *.bin
 *.elf
 *.fwpkg
+*.img
+*.plan.json
+*.resource.json

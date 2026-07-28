@@ -65,6 +65,12 @@ The application starts the native RTOS port, claims the named
 then performs initialize, scan and connect before handing `WifiDevice` to a
 long-lived smoltcp DHCP loop. Expected UART markers are `WIFI_INIT_OK`,
 `WIFI_SCAN_OK`, `WIFI_CONNECT_OK`, and finally `WIFI_DHCP_OK`.
+
+`just image` also emits `{{crate_name}}.resource.json` from the selected public
+`hisi-rf` profile. The host-only helper uses the same event capacity as the
+firmware and depends on no WS63 sys/blob/RTOS-driver crate directly. Review this
+resource contract together with `{{crate_name}}.plan.json` before changing the
+profile or memory layout.
 {% else %}
 ## Run (QEMU)
 

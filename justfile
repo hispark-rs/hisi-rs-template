@@ -23,7 +23,12 @@ img := "{{crate_name}}.img"
 plan := "{{crate_name}}.plan.json"
 # The single-partition vendor package (the `fwpkg` recipe / hisiflash path).
 fwpkg_out := "{{crate_name}}.fwpkg"
-# Official upstream rustc has the target built in; rustup does not ship prebuilt
+{% if starter == "wifi" %}# Compile-time profile/resource contract emitted by a host-only helper.
+resource_report := "{{crate_name}}.resource.json"
+# `rustc --print host-tuple` is supported by the pinned official toolchain and
+# avoids hard-coding macOS/Linux/Windows host triples.
+host := `rustc --print host-tuple`
+{% endif %}# Official upstream rustc has the target built in; rustup does not ship prebuilt
 # rust-std for it yet, so firmware builds compile core/alloc from rust-src.
 build_std := "-Zbuild-std=core,alloc"
 
@@ -71,9 +76,16 @@ run-hw PORT='/dev/ttyUSB0' BAUD='115200': flash
     @cat {{PORT}}
 {% endraw %}{% endif %}{% raw %}
 
+{% endraw %}{% if starter == "wifi" %}{% raw %}
+# Emit the selected profile's deterministic, allocation-free resource contract
+# with a host-only helper that depends solely on the public hisi-rf facade.
+resource-report:
+    cargo run --manifest-path tools/rf-resource-report/Cargo.toml --target {{host}} --release -- {{resource_report}}
+
+{% endraw %}{% endif %}{% raw %}
 # Build the complete flash image and machine-readable plan. hisi-fwpkg owns the
 # header/hash/body-range semantics; probe-rs only writes the resulting bin.
-image: build
+image: build{% endraw %}{% if starter == "wifi" %} resource-report{% endif %}{% raw %}
     hisi-fwpkg plan {{elf}} --chip {% endraw %}{% if chip == "ws63" %}ws63{% else %}bs21{% endif %}{% raw %} --app-addr {{APP_ADDR}} --image-output {{img}} > {{plan}}
 
 # Flash {{img}} to the plan base address via the PATCHED probe-rs fork, then reset.
@@ -92,5 +104,5 @@ fwpkg: build
 # Remove build + packaging artifacts.
 clean:
     cargo clean
-    -rm -f {{img}} {{plan}} {{fwpkg_out}}
+    -rm -f {{img}} {{plan}} {{fwpkg_out}}{% endraw %}{% if starter == "wifi" %}{% raw %} {{resource_report}}{% endraw %}{% endif %}{% raw %}
 {% endraw %}

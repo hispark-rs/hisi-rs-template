@@ -89,3 +89,37 @@ jobs:
           just image
           test -s ${{ matrix.crate }}.img
           test -s ${{ matrix.crate }}.plan.json
+          if [ "${{ matrix.starter }}" = "wifi" ]; then
+            test -s ${{ matrix.crate }}.resource.json
+            grep -q '"schema":"hisi-rf-resource-report/v5"' ${{ matrix.crate }}.resource.json
+            grep -q '"profile":"wifi-wpa2-smoltcp"' ${{ matrix.crate }}.resource.json
+            grep -q '"event_capacity":8' ${{ matrix.crate }}.resource.json
+          fi
+
+  wifi-resource-report:
+    name: Wi-Fi resource report / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-07-09
+          components: rust-src,llvm-tools-preview
+
+      - name: Install template tools
+        run: cargo +stable install cargo-generate just
+
+      - name: Generate Wi-Fi project
+        run: cargo +stable generate --path . --name hp-ws63-wifi --define chip=ws63 --define starter=wifi --define app_partition_addr=0x00230000 --vcs none --no-workspace --destination "${{ runner.temp }}" --silent
+
+      - name: Emit profile resource report
+        working-directory: ${{ runner.temp }}/hp-ws63-wifi
+        run: just resource-report

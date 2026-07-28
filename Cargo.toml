@@ -5,6 +5,16 @@ edition = "2024"
 authors = ["{{authors}}"]
 license = "MIT"
 
+{%- if starter == "wifi" and chip == "ws63" %}
+[workspace]
+members = [".", "tools/rf-resource-report"]
+default-members = ["."]
+resolver = "2"
+
+[workspace.dependencies]
+hisi-rf = { version = "=0.1.0-alpha.41", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
+{%- endif %}
+
 [[bin]]
 name = "{{crate_name}}"
 path = "src/main.rs"
@@ -37,7 +47,7 @@ static_cell = "2"
 {%- endif %}
 {%- if starter == "wifi" and chip == "ws63" %}
 hisi-panic-handler = { version = "0.1.0", default-features = false, features = ["panic-uart0"] }
-hisi-rf = { version = "0.1.0-alpha.38", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
+hisi-rf = { workspace = true }
 hisi-rtos = "0.1.0-alpha.13"
 smoltcp = { version = "0.13", default-features = false, features = ["medium-ethernet", "proto-ipv4", "socket-dhcpv4"] }
 {%- endif %}

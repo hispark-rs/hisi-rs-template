@@ -8,6 +8,17 @@ application version, not the template version.
 
 ## [Unreleased]
 
+### Added
+
+- The WS63 Wi-Fi starter now emits a deterministic
+  `*.resource.json` alongside its image and FlashPlan. A host-only helper reads
+  the selected profile through the public `hisi-rf` facade and uses the same
+  bounded event capacity as the firmware.
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.41`.
+
 ## [0.7.0-alpha.8] - 2026-07-28
 
 ### Changed
