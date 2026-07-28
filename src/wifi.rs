@@ -16,11 +16,10 @@ use hisi_hal::uart::{Config as UartConfig, Uart, UartClock};
 use hisi_hal::wdt::Watchdog;
 use hisi_panic_handler as _;
 use hisi_rf::{
-    Error as RadioError, Passphrase, RadioConfig, ScanConfig, ScanResult, StationConfig, WifiDevice,
+    Error as RadioError, Passphrase, RadioConfig, ScanConfig, ScanResult, StationConfig,
 };
 use hisi_riscv_rt::entry;
 use smoltcp::iface::{Config as InterfaceConfig, Interface, SocketSet, SocketStorage};
-use smoltcp::phy::Device;
 use smoltcp::socket::dhcpv4;
 use smoltcp::time::Instant as NetworkInstant;
 use smoltcp::wire::{EthernetAddress, HardwareAddress, IpCidr};
@@ -140,7 +139,7 @@ fn write_ipv4(uart: &Uart0<'_>, address: [u8; 4]) {
     }
 }
 
-fn run_smoltcp<D: Device>(uart: &Uart0<'_>, mut device: WifiDevice<D>, mac: [u8; 6]) -> ! {
+fn run_smoltcp(uart: &Uart0<'_>, mut device: hisi_rf::ws63::WifiDevice, mac: [u8; 6]) -> ! {
     let mut config = InterfaceConfig::new(HardwareAddress::Ethernet(EthernetAddress(mac)));
     config.random_seed = monotonic_ms();
     let mut interface = Interface::new(config, &mut device, network_now());

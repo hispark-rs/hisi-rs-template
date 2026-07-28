@@ -8,6 +8,11 @@ application version, not the template version.
 
 ## [Unreleased]
 
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.48` and
+  `hisi-rtos 0.1.0-alpha.14`, and fixed release builds to one codegen unit so
+  generated projects retain the validated WS63 size/link layout independently
+  of a parent workspace.
+
 ## [0.7.0-alpha.10] - 2026-07-28
 
 ### Changed
