@@ -8,6 +8,19 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.20] - 2026-07-30
+
+### Fixed
+
+- Size the generated caller-owned `SchedulerArena` for task stacks and the
+  explicit RTOS synchronization-object headroom. The first stack-only split
+  exhausted its heap during vendor initialization on WS63 silicon.
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.68` and
+  `hisi-rtos 0.1.0-alpha.17`.
+
 ## [0.7.0-alpha.19] - 2026-07-30
 
 ### Changed

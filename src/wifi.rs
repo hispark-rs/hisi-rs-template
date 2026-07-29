@@ -69,9 +69,9 @@ fn fail_with_rtos_start(uart: &Uart0<'_>, error: hisi_rtos::StartError) -> ! {
 hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE);
 static RTOS_STORAGE: hisi_rtos::SchedulerStorage<15> = hisi_rtos::SchedulerStorage::new();
 #[cfg_attr(target_arch = "riscv32", unsafe(link_section = ".hisi.shared-arena"))]
-static RTOS_STACKS: hisi_rtos::SchedulerStackArena<
-    { hisi_rf::ws63::SELECTED_TASK_STACK_ARENA_BYTES },
-> = hisi_rtos::SchedulerStackArena::new();
+static RTOS_ARENA: hisi_rtos::SchedulerArena<
+    { hisi_rf::ws63::SELECTED_RUNTIME_ARENA_BYTES },
+> = hisi_rtos::SchedulerArena::new();
 
 hisi_rtos::bind_interrupts!(struct RtosIrqs {
     TIMER_INT0 => hisi_rtos::ws63::TimerInterrupt;
@@ -220,7 +220,7 @@ fn main() -> ! {
         Ok(storage) => storage,
         Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
     };
-    let scheduler_storage = match RTOS_STORAGE.install(&RTOS_STACKS) {
+    let scheduler_storage = match RTOS_STORAGE.install(&RTOS_ARENA) {
         Ok(storage) => storage,
         Err(_) => fail_with_configuration(
             &uart,
