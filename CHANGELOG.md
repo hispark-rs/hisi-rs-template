@@ -8,6 +8,21 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.15] - 2026-07-29
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.54`.
+- Moved the generated application's credentials, scan capacity, typed
+  operation/backend timeouts, and application wait deadlines into
+  `src/wifi_config.rs`, keeping policy visible and separate from the radio
+  workflow.
+- Added bounded outer wait deadlines for initialize, scan, and connect. A
+  dropped operation future now enters the facade's cancellation path, while
+  application, operation, and backend timeout diagnostics remain distinct.
+- Updated the generated resource-report contract for the cancellation channel
+  added to the fixed eight-event profile.
+
 ## [0.7.0-alpha.14] - 2026-07-29
 
 ### Changed

@@ -32,7 +32,7 @@ default = "blinky"
 ignore = ["memory.x"]
 
 [conditional.'starter != "wifi"']
-ignore = ["src/wifi.rs", "tools/rf-resource-report"]
+ignore = ["src/wifi.rs", "src/wifi_config.rs", "tools/rf-resource-report"]
 
 [conditional.'chip == "ws63"'.placeholders.app_partition_addr]
 type = "string"
