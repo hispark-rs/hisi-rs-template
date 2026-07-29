@@ -75,6 +75,21 @@ jobs:
         working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: cargo check -Zbuild-std=core,alloc
 
+      - name: Check Wi-Fi failure contract
+        if: matrix.starter == 'wifi'
+        working-directory: ${{ runner.temp }}/${{ matrix.project }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'hisi-rf-application-config/v1' src/wifi.rs
+          grep -q 'hisi-rtos-start/v1' src/wifi.rs
+          if grep -Eq \
+            'panic!\("Wi-Fi operation failed"|expect\("install caller-owned radio storage"|expect\("start hisi-rtos"' \
+            src/wifi.rs; then
+            echo "recoverable Wi-Fi failures must use structured diagnostics" >&2
+            exit 1
+          fi
+
       - name: Build generated project
         working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: cargo build -Zbuild-std=core,alloc --release

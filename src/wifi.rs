@@ -15,7 +15,7 @@ use hisi_hal::timer::TimerAlarm0;
 use hisi_hal::uart::{Config as UartConfig, Uart, UartClock};
 use hisi_hal::wdt::Watchdog;
 use hisi_panic_handler as _;
-use hisi_rf::{Error as RadioError, Passphrase, ScanConfig, ScanResult, StationConfig};
+use hisi_rf::{Passphrase, ScanConfig, ScanResult, StationConfig};
 use hisi_riscv_rt::entry;
 use smoltcp::iface::{Config as InterfaceConfig, Interface, SocketSet, SocketStorage};
 use smoltcp::socket::dhcpv4;
@@ -47,7 +47,27 @@ fn fail_with_radio_diagnostic(uart: &Uart0<'_>, diagnostic: hisi_rf::Diagnostic)
     let mut writer = DiagnosticWriter(uart);
     let _ = diagnostic.write_json(&mut writer);
     uart.write(b"\r\n");
-    panic!("Wi-Fi operation failed")
+    halt()
+}
+
+fn fail_with_configuration(uart: &Uart0<'_>, code: &[u8], action: &[u8]) -> ! {
+    uart.write(b"WIFI_ERROR {\"schema\":\"hisi-rf-application-config/v1\",\"code\":\"");
+    uart.write(code);
+    uart.write(b"\",\"action\":\"");
+    uart.write(action);
+    uart.write(b"\"}\r\n");
+    halt()
+}
+
+fn fail_with_rtos_start(uart: &Uart0<'_>, error: hisi_rtos::StartError) -> ! {
+    let code = match error {
+        hisi_rtos::StartError::AlreadyStarted => b"runtime.already-started".as_slice(),
+        hisi_rtos::StartError::Driver(_) => b"runtime.driver-registration".as_slice(),
+    };
+    uart.write(b"WIFI_ERROR {\"schema\":\"hisi-rtos-start/v1\",\"code\":\"");
+    uart.write(code);
+    uart.write(b"\",\"action\":\"restart with exactly one RTOS runtime\"}\r\n");
+    halt()
 }
 
 hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE);
@@ -118,7 +138,13 @@ fn fail_with_application_deadline(uart: &Uart0<'_>, stage: &[u8]) -> ! {
     uart.write(b"\"code\":\"application.deadline\",\"stage\":\"");
     uart.write(stage);
     uart.write(b"\"}\r\n");
-    panic!("Wi-Fi application wait deadline elapsed")
+    halt()
+}
+
+fn halt() -> ! {
+    loop {
+        core::hint::spin_loop();
+    }
 }
 
 fn select_network<'a>(results: &'a [ScanResult], ssid: &[u8]) -> Option<&'a ScanResult> {
@@ -200,15 +226,20 @@ fn main() -> ! {
     Watchdog::new(p.WDT).disable();
 
     if WIFI_SSID.is_empty() || WIFI_PASSPHRASE.is_empty() {
-        panic!("set WS63_WIFI_SSID and WS63_WIFI_PASSPHRASE before building");
+        fail_with_configuration(
+            &uart,
+            b"credentials.missing",
+            b"set WS63_WIFI_SSID and WS63_WIFI_PASSPHRASE before building",
+        );
     }
 
     let mut tcxo = hisi_hal::tcxo::TcxoDriver::new(p.TCXO);
     tcxo.enable();
 
-    let installed_storage = RADIO_STORAGE
-        .install()
-        .expect("install caller-owned radio storage");
+    let installed_storage = match RADIO_STORAGE.install() {
+        Ok(storage) => storage,
+        Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
+    };
 
     let mut delay = Delay::new();
     let rf_ready = RfPower::new(p.CMU, p.CLDO_CRG).enable(p.EFUSE, &mut delay);
@@ -216,7 +247,7 @@ fn main() -> ! {
 
     let _timer = TimerAlarm0::new(p.TIMER);
     let _software_interrupt = SoftwareInterrupt0::new(p.SYS_CTL1);
-    let _runtime = hisi_rtos::start_with_port(
+    let _runtime = match hisi_rtos::start_with_port(
         hisi_rtos::PortedConfig {
             radio_task_policy: hisi_rtos::RunPolicy::Cooperative,
             ..hisi_rtos::PortedConfig::default()
@@ -233,8 +264,10 @@ fn main() -> ! {
             pend_reschedule: SoftwareInterrupt0::pend_interrupt,
             contract_violation,
         },
-    )
-    .expect("start hisi-rtos");
+    ) {
+        Ok(runtime) => runtime,
+        Err(error) => fail_with_rtos_start(&uart, error),
+    };
 
     // The ported scheduler completes handoffs through the software-interrupt
     // trap path, so global interrupts must be enabled before radio tasks spawn.
@@ -272,12 +305,28 @@ fn main() -> ! {
     .unwrap_or_else(|error| fail_with_radio_diagnostic(&uart, error.diagnostic()));
     uart.write(b"WIFI_SCAN_OK\r\n");
 
-    let selected = select_network(&results[..outcome.count], WIFI_SSID)
-        .unwrap_or_else(|| fail_with_radio_diagnostic(&uart, RadioError::Protocol.diagnostic()));
-    let passphrase = Passphrase::try_from_ascii(WIFI_PASSPHRASE)
-        .unwrap_or_else(|| fail_with_radio_diagnostic(&uart, RadioError::Protocol.diagnostic()));
+    let selected = select_network(&results[..outcome.count], WIFI_SSID).unwrap_or_else(|| {
+        fail_with_configuration(
+            &uart,
+            b"network.not-found",
+            b"verify SSID visibility and run a new scan",
+        )
+    });
+    let passphrase = Passphrase::try_from_ascii(WIFI_PASSPHRASE).unwrap_or_else(|| {
+        fail_with_configuration(
+            &uart,
+            b"credentials.invalid",
+            b"use an 8-63 byte WPA2 passphrase",
+        )
+    });
     let station = StationConfig::wpa2_personal(selected, passphrase, CONNECT_OPERATION_TIMEOUT)
-        .unwrap_or_else(|| fail_with_radio_diagnostic(&uart, RadioError::Protocol.diagnostic()));
+        .unwrap_or_else(|| {
+            fail_with_configuration(
+                &uart,
+                b"network.security-mismatch",
+                b"select a WPA2-Personal network",
+            )
+        });
     let connected = block_on_radio(wifi.controller.connect(station), CONNECT_WAIT_DEADLINE)
         .unwrap_or_else(|_| fail_with_application_deadline(&uart, b"connect"));
     if let Err(error) = connected {

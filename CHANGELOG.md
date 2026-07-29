@@ -8,6 +8,13 @@ application version, not the template version.
 
 ## [Unreleased]
 
+### Changed
+
+- The WS63 Wi-Fi starter now reports recoverable configuration, resource,
+  runtime-start, operation, and application-deadline failures as versioned,
+  actionable diagnostics before halting. Panic remains reserved for broken
+  static or unsafe contracts.
+
 ## [0.7.0-alpha.17] - 2026-07-29
 
 ### Changed
