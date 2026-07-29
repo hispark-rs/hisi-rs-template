@@ -285,6 +285,9 @@ fn main() -> ! {
     }
     uart.write(b"WIFI_CONNECT_OK\r\n");
 
-    let mac = hisi_rf::ws63::station_mac_address().expect("station MAC unavailable after init");
+    let mac = wifi
+        .device
+        .station_mac_address()
+        .expect("station MAC unavailable after init");
     run_smoltcp(&uart, wifi.device, mac)
 }

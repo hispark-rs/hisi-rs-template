@@ -8,6 +8,17 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.16] - 2026-07-29
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.55`.
+- The generated smoltcp runner now obtains the station MAC from its initialized
+  `WifiDevice`; the generated project no longer depends on process-global
+  netif state.
+- Updated the resource-report contract for the per-radio L2 capability state
+  added by `hisi-rf 0.1.0-alpha.55`.
+
 ## [0.7.0-alpha.15] - 2026-07-29
 
 ### Changed
