@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.17] - 2026-07-29
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.57`. The generated
+  application keeps all Wi-Fi timeouts, capacities, credentials, and
+  `RadioConfig` construction in `src/wifi_config.rs`; it does not duplicate
+  those values in the runner or application entry point.
+
 ## [0.7.0-alpha.16] - 2026-07-29
 
 ### Changed
