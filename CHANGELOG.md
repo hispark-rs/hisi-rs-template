@@ -8,6 +8,16 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.19] - 2026-07-30
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.67` and
+  `hisi-rtos 0.1.0-alpha.16`.
+- Generated Wi-Fi projects now declare caller-owned scheduler stack storage
+  and pass its installed capability to the native WS63 RTOS facade. Application
+  allocator callbacks are no longer part of the happy path.
+
 ## [0.7.0-alpha.18] - 2026-07-30
 
 ### Changed

@@ -67,21 +67,16 @@ fn fail_with_rtos_start(uart: &Uart0<'_>, error: hisi_rtos::StartError) -> ! {
 }
 
 hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE);
+static RTOS_STORAGE: hisi_rtos::SchedulerStorage<15> = hisi_rtos::SchedulerStorage::new();
+#[cfg_attr(target_arch = "riscv32", unsafe(link_section = ".hisi.shared-arena"))]
+static RTOS_STACKS: hisi_rtos::SchedulerStackArena<
+    { hisi_rf::ws63::SELECTED_TASK_STACK_ARENA_BYTES },
+> = hisi_rtos::SchedulerStackArena::new();
 
 hisi_rtos::bind_interrupts!(struct RtosIrqs {
     TIMER_INT0 => hisi_rtos::ws63::TimerInterrupt;
     SOFT_INT0 => hisi_rtos::ws63::SoftwareInterrupt;
 });
-
-unsafe fn rtos_allocate(size: usize) -> *mut u8 {
-    // SAFETY: hisi-rtos releases this allocation through `rtos_deallocate`.
-    unsafe { hisi_rf::ws63::InstalledRadioStorage::allocate(size) }
-}
-
-unsafe fn rtos_deallocate(pointer: *mut u8) {
-    // SAFETY: hisi-rtos only returns pointers obtained through rtos_allocate.
-    unsafe { hisi_rf::ws63::InstalledRadioStorage::deallocate(pointer) };
-}
 
 fn monotonic_ms() -> u64 {
     HalInstant::now().raw() / (u64::from(hisi_hal::soc::chip::TCXO_HZ) / 1_000)
@@ -225,6 +220,14 @@ fn main() -> ! {
         Ok(storage) => storage,
         Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
     };
+    let scheduler_storage = match RTOS_STORAGE.install(&RTOS_STACKS) {
+        Ok(storage) => storage,
+        Err(_) => fail_with_configuration(
+            &uart,
+            b"runtime.storage",
+            b"declare one unclaimed scheduler storage arena for the selected profile",
+        ),
+    };
 
     let mut delay = Delay::new();
     let rf_ready = RfPower::new(p.CMU, p.CLDO_CRG).enable(p.EFUSE, &mut delay);
@@ -238,10 +241,7 @@ fn main() -> ! {
         hisi_rtos::ws63::Resources {
             timer: p.TIMER,
             software_interrupt: p.SYS_CTL1,
-            allocator: hisi_rtos::ws63::Allocator {
-                allocate: rtos_allocate,
-                deallocate: rtos_deallocate,
-            },
+            storage: scheduler_storage,
             contract_violation,
             irqs: RtosIrqs::new(),
         },

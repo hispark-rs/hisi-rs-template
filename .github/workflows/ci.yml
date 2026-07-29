@@ -85,6 +85,8 @@ jobs:
           grep -q 'hisi-rtos-start/v1' src/wifi.rs
           grep -q 'hisi_rtos::ws63::start' src/wifi.rs
           grep -q 'hisi_rtos::bind_interrupts!' src/wifi.rs
+          grep -q 'hisi_rtos::SchedulerStorage' src/wifi.rs
+          grep -q 'hisi_rtos::SchedulerStackArena' src/wifi.rs
           if grep -Eq \
             'panic!\("Wi-Fi operation failed"|expect\("install caller-owned radio storage"|expect\("start hisi-rtos"' \
             src/wifi.rs; then
@@ -92,9 +94,9 @@ jobs:
             exit 1
           fi
           if grep -Eq \
-            'hisi_rtos::start_with_port|hisi_rtos::SchedulerPort|extern "C" fn (TIMER_INT0|SOFT_INT0)' \
+            'hisi_rtos::start_with_port|hisi_rtos::SchedulerPort|hisi_rtos::ws63::Allocator|rtos_(allocate|deallocate)|extern "C" fn (TIMER_INT0|SOFT_INT0)' \
             src/wifi.rs; then
-            echo "generated Wi-Fi projects must use the native WS63 RTOS port facade" >&2
+            echo "generated Wi-Fi projects must use caller-owned storage and the native WS63 RTOS facade" >&2
             exit 1
           fi
 
@@ -115,12 +117,16 @@ jobs:
           test -s ${{ matrix.crate }}.plan.json
           if [ "${{ matrix.starter }}" = "wifi" ]; then
             test -s ${{ matrix.crate }}.resource.json
-            grep -q '"schema":"hisi-rf-resource-report/v6"' ${{ matrix.crate }}.resource.json
+            grep -q '"schema":"hisi-rf-resource-report/v7"' ${{ matrix.crate }}.resource.json
             grep -q '"profile":"wifi-wpa2-smoltcp"' ${{ matrix.crate }}.resource.json
             grep -q '"event_capacity":8' ${{ matrix.crate }}.resource.json
             grep -q '"control_storage_bytes":8608' ${{ matrix.crate }}.resource.json
             grep -q '"radio_state_bytes":2216' ${{ matrix.crate }}.resource.json
-            grep -q '"arena_storage_bytes":303168' ${{ matrix.crate }}.resource.json
+            grep -q '"task_stack_bytes":172032' ${{ matrix.crate }}.resource.json
+            grep -q '"task_stack_arena_bytes":172544' ${{ matrix.crate }}.resource.json
+            grep -q '"arena_storage_bytes":130624' ${{ matrix.crate }}.resource.json
+            grep -q '"shared_rf_arena_bytes":130560' ${{ matrix.crate }}.resource.json
+            grep -q '"caller_owned_bytes":311776' ${{ matrix.crate }}.resource.json
           fi
 
   wifi-resource-report:
