@@ -83,10 +83,18 @@ jobs:
           set -euo pipefail
           grep -q 'hisi-rf-application-config/v1' src/wifi.rs
           grep -q 'hisi-rtos-start/v1' src/wifi.rs
+          grep -q 'hisi_rtos::ws63::start' src/wifi.rs
+          grep -q 'hisi_rtos::bind_interrupts!' src/wifi.rs
           if grep -Eq \
             'panic!\("Wi-Fi operation failed"|expect\("install caller-owned radio storage"|expect\("start hisi-rtos"' \
             src/wifi.rs; then
             echo "recoverable Wi-Fi failures must use structured diagnostics" >&2
+            exit 1
+          fi
+          if grep -Eq \
+            'hisi_rtos::start_with_port|hisi_rtos::SchedulerPort|extern "C" fn (TIMER_INT0|SOFT_INT0)' \
+            src/wifi.rs; then
+            echo "generated Wi-Fi projects must use the native WS63 RTOS port facade" >&2
             exit 1
           fi
 

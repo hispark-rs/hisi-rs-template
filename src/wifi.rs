@@ -2,16 +2,12 @@
 
 use core::fmt;
 use core::future::Future;
-use core::num::NonZeroU32;
 use core::task::{Context, Poll, Waker};
 
 use hisi_hal::Peripherals;
 use hisi_hal::delay::Delay;
-use hisi_hal::interrupt;
 use hisi_hal::rf_power::RfPower;
-use hisi_hal::software_interrupt::SoftwareInterrupt0;
 use hisi_hal::time::Instant as HalInstant;
-use hisi_hal::timer::TimerAlarm0;
 use hisi_hal::uart::{Config as UartConfig, Uart, UartClock};
 use hisi_hal::wdt::Watchdog;
 use hisi_panic_handler as _;
@@ -72,6 +68,11 @@ fn fail_with_rtos_start(uart: &Uart0<'_>, error: hisi_rtos::StartError) -> ! {
 
 hisi_rf::ws63::declare_radio_storage!(static RADIO_STORAGE);
 
+hisi_rtos::bind_interrupts!(struct RtosIrqs {
+    TIMER_INT0 => hisi_rtos::ws63::TimerInterrupt;
+    SOFT_INT0 => hisi_rtos::ws63::SoftwareInterrupt;
+});
+
 unsafe fn rtos_allocate(size: usize) -> *mut u8 {
     // SAFETY: hisi-rtos releases this allocation through `rtos_deallocate`.
     unsafe { hisi_rf::ws63::InstalledRadioStorage::allocate(size) }
@@ -92,22 +93,6 @@ fn network_now() -> NetworkInstant {
 
 fn contract_violation(_: hisi_rtos::ContractViolation) -> ! {
     panic!("hisi-rtos scheduler contract violation")
-}
-
-#[unsafe(no_mangle)]
-extern "C" fn TIMER_INT0() {
-    TimerAlarm0::clear_interrupt();
-    hisi_rtos::interrupt_enter();
-    hisi_rtos::on_timer_interrupt();
-    hisi_rtos::interrupt_exit();
-}
-
-#[unsafe(no_mangle)]
-extern "C" fn SOFT_INT0() {
-    SoftwareInterrupt0::clear_interrupt();
-    hisi_rtos::interrupt_enter();
-    hisi_rtos::on_software_interrupt();
-    hisi_rtos::interrupt_exit();
 }
 
 struct ApplicationDeadlineElapsed;
@@ -245,33 +230,25 @@ fn main() -> ! {
     let rf_ready = RfPower::new(p.CMU, p.CLDO_CRG).enable(p.EFUSE, &mut delay);
     let (_cldo_crg, efuse) = rf_ready.into_parts();
 
-    let _timer = TimerAlarm0::new(p.TIMER);
-    let _software_interrupt = SoftwareInterrupt0::new(p.SYS_CTL1);
-    let _runtime = match hisi_rtos::start_with_port(
-        hisi_rtos::PortedConfig {
+    let _runtime = match hisi_rtos::ws63::start(
+        hisi_rtos::ws63::Config {
             radio_task_policy: hisi_rtos::RunPolicy::Cooperative,
-            ..hisi_rtos::PortedConfig::default()
+            ..hisi_rtos::ws63::Config::default()
         },
-        hisi_rtos::Resources {
-            allocate: rtos_allocate,
-            deallocate: rtos_deallocate,
-            monotonic_ms,
-        },
-        hisi_rtos::SchedulerPort {
-            max_timer_delay: NonZeroU32::new(TimerAlarm0::MAX_DELAY_MS).unwrap(),
-            arm_timer: TimerAlarm0::arm_millis,
-            disarm_timer: TimerAlarm0::disarm,
-            pend_reschedule: SoftwareInterrupt0::pend_interrupt,
+        hisi_rtos::ws63::Resources {
+            timer: p.TIMER,
+            software_interrupt: p.SYS_CTL1,
+            allocator: hisi_rtos::ws63::Allocator {
+                allocate: rtos_allocate,
+                deallocate: rtos_deallocate,
+            },
             contract_violation,
+            irqs: RtosIrqs::new(),
         },
     ) {
         Ok(runtime) => runtime,
         Err(error) => fail_with_rtos_start(&uart, error),
     };
-
-    // The ported scheduler completes handoffs through the software-interrupt
-    // trap path, so global interrupts must be enabled before radio tasks spawn.
-    unsafe { interrupt::enable_global() };
 
     let (control_storage, radio_arena) = installed_storage.into_init_parts();
     let resources =

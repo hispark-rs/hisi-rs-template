@@ -8,12 +8,18 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.18] - 2026-07-30
+
 ### Changed
 
 - The WS63 Wi-Fi starter now reports recoverable configuration, resource,
   runtime-start, operation, and application-deadline failures as versioned,
   actionable diagnostics before halting. Panic remains reserved for broken
   static or unsafe contracts.
+- Updated to `hisi-hal 0.7.0-alpha.6` and `hisi-rtos 0.1.0-alpha.15`.
+  Generated Wi-Fi projects use the native `hisi_rtos::ws63::start` facade and
+  no longer define their own TIMER_INT0/SOFT_INT0 handlers, scheduler port, or
+  global-interrupt startup sequence.
 
 ## [0.7.0-alpha.17] - 2026-07-29
 
