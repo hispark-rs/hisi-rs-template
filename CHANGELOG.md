@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.22] - 2026-07-30
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.70`. Generated
+  resource reports now identify the repeated-silicon-calibrated WPA2 runtime
+  profile while retaining WPA3 as uncalibrated.
+
 ## [0.7.0-alpha.21] - 2026-07-30
 
 ### Changed

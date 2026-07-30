@@ -123,6 +123,8 @@ jobs:
             test -s ${{ matrix.crate }}.resource.json
             grep -q '"schema":"hisi-rf-resource-report/v8"' ${{ matrix.crate }}.resource.json
             grep -q '"profile":"wifi-wpa2-smoltcp"' ${{ matrix.crate }}.resource.json
+            grep -q '"profile_revision":"ws63-wifi-2026-07-30-r6"' ${{ matrix.crate }}.resource.json
+            grep -q '"runtime_resources_calibrated":true' ${{ matrix.crate }}.resource.json
             grep -q '"event_capacity":8' ${{ matrix.crate }}.resource.json
             grep -q '"control_storage_bytes":8608' ${{ matrix.crate }}.resource.json
             grep -q '"radio_state_bytes":2216' ${{ matrix.crate }}.resource.json
