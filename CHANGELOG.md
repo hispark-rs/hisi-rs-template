@@ -8,6 +8,13 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.21] - 2026-07-30
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.69`, whose CI now
+  exercises the complete WPA2 diagnostics facade and resource-report v8 schema.
+
 ## [0.7.0-alpha.20] - 2026-07-30
 
 ### Fixed
