@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.25] - 2026-08-03
+
+### Fixed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.74`, which keeps
+  vendor bootstrap admission separate from the optional Rust incremental
+  worker reservation. The generated default remains the calibrated blocking
+  profile.
+
 ## [0.7.0-alpha.24] - 2026-08-03
 
 ### Fixed
