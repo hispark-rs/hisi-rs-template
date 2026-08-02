@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.23] - 2026-08-02
+
+### Fixed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.71`, preserving
+  incremental operation ownership when a synchronous backend turn exceeds its
+  elapsed time grant.
+
 ## [0.7.0-alpha.22] - 2026-07-30
 
 ### Changed
