@@ -12,7 +12,7 @@ default-members = ["."]
 resolver = "2"
 
 [workspace.dependencies]
-hisi-rf = { version = "=0.1.0-alpha.71", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
+hisi-rf = { version = "=0.1.0-alpha.73", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
 {%- endif %}
 
 [[bin]]
@@ -48,7 +48,7 @@ static_cell = "2"
 {%- if starter == "wifi" and chip == "ws63" %}
 hisi-panic-handler = { version = "0.1.0", default-features = false, features = ["panic-uart0"] }
 hisi-rf = { workspace = true }
-hisi-rtos = { version = "0.1.0-alpha.17", features = ["chip-ws63"] }
+hisi-rtos = { version = "=0.1.0-alpha.18", features = ["chip-ws63"] }
 smoltcp = { version = "0.13", default-features = false, features = ["medium-ethernet", "proto-ipv4", "socket-dhcpv4"] }
 {%- endif %}
 

@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.24] - 2026-08-03
+
+### Fixed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.73` and
+  `hisi-rtos 0.1.0-alpha.18`. The generated default remains the calibrated
+  blocking profile; it tracks the corrected r8 SRAM contract while the
+  budgeted incremental worker remains an explicit HIL-only opt-in.
+
 ## [0.7.0-alpha.23] - 2026-08-02
 
 ### Fixed
