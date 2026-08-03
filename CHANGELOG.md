@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.26] - 2026-08-03
+
+### Fixed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.75` and configure
+  `hisi-rtos` from the selected profile's minimum task-stack contract. This
+  keeps heterogeneous worker and vendor reservations consistent in generated
+  applications.
+
 ## [0.7.0-alpha.25] - 2026-08-03
 
 ### Fixed

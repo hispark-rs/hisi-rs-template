@@ -2,6 +2,7 @@
 
 use core::fmt;
 use core::future::Future;
+use core::num::NonZeroUsize;
 use core::task::{Context, Poll, Waker};
 
 use hisi_hal::Peripherals;
@@ -235,6 +236,10 @@ fn main() -> ! {
 
     let _runtime = match hisi_rtos::ws63::start(
         hisi_rtos::ws63::Config {
+            minimum_stack_size: NonZeroUsize::new(
+                hisi_rf::ws63::SELECTED_MINIMUM_TASK_STACK_BYTES,
+            )
+            .expect("selected profile minimum task stack is non-zero"),
             radio_task_policy: hisi_rtos::RunPolicy::Cooperative,
             ..hisi_rtos::ws63::Config::default()
         },
