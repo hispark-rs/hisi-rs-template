@@ -121,7 +121,7 @@ jobs:
           test -s ${{ matrix.crate }}.plan.json
           if [ "${{ matrix.starter }}" = "wifi" ]; then
             test -s ${{ matrix.crate }}.resource.json
-            grep -q '"schema":"hisi-rf-resource-report/v8"' ${{ matrix.crate }}.resource.json
+            grep -q '"schema":"hisi-rf-resource-report/v9"' ${{ matrix.crate }}.resource.json
             grep -q '"profile":"wifi-wpa2-smoltcp"' ${{ matrix.crate }}.resource.json
             grep -q '"profile_revision":"ws63-wifi-2026-08-03-r8"' ${{ matrix.crate }}.resource.json
             grep -q '"runtime_resources_calibrated":true' ${{ matrix.crate }}.resource.json
@@ -129,6 +129,7 @@ jobs:
             grep -q '"control_storage_bytes":8608' ${{ matrix.crate }}.resource.json
             grep -q '"radio_state_bytes":2216' ${{ matrix.crate }}.resource.json
             grep -q '"task_stack_bytes":172032' ${{ matrix.crate }}.resource.json
+            grep -q '"minimum_task_stack_bytes":24576' ${{ matrix.crate }}.resource.json
             grep -q '"runtime_object_headroom_bytes":16384' ${{ matrix.crate }}.resource.json
             grep -q '"runtime_arena_bytes":188928' ${{ matrix.crate }}.resource.json
             grep -q '"arena_storage_bytes":114240' ${{ matrix.crate }}.resource.json
