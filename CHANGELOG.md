@@ -8,6 +8,15 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.27] - 2026-08-03
+
+### Fixed
+
+- Updated the Wi-Fi resource-report contract to schema v9 and verify the
+  selected profile's 24 KiB minimum vendor task stack. Generated projects now
+  fail CI if their RTOS stack floor drifts from the profile-owned resource
+  contract.
+
 ## [0.7.0-alpha.26] - 2026-08-03
 
 ### Fixed
