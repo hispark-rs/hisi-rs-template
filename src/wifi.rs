@@ -1,10 +1,10 @@
 // WS63 Wi-Fi happy path through the public hisi-rf facade.
 
 use core::fmt;
-use core::future::Future;
-use core::num::NonZeroUsize;
-use core::task::{Context, Poll, Waker};
+use core::num::{NonZeroU32, NonZeroUsize};
 
+use embassy_executor::{Executor, Spawner};
+use embassy_time::{Duration, Timer, with_timeout};
 use hisi_hal::Peripherals;
 use hisi_hal::delay::Delay;
 use hisi_hal::rf_power::RfPower;
@@ -12,34 +12,35 @@ use hisi_hal::time::Instant as HalInstant;
 use hisi_hal::uart::{Config as UartConfig, Uart, UartClock};
 use hisi_hal::wdt::Watchdog;
 use hisi_panic_handler as _;
-use hisi_rf::{Passphrase, ScanConfig, ScanResult, StationConfig};
+use hisi_rf::ws63::{RadioParts, RadioRunner, WifiDevice};
+use hisi_rf::{Passphrase, ScanConfig, ScanResult, StationConfig, WifiController};
 use hisi_riscv_rt::entry;
 use smoltcp::iface::{Config as InterfaceConfig, Interface, SocketSet, SocketStorage};
 use smoltcp::socket::dhcpv4;
 use smoltcp::time::Instant as NetworkInstant;
 use smoltcp::wire::{EthernetAddress, HardwareAddress, IpCidr};
+use static_cell::StaticCell;
 
 #[path = "wifi_config.rs"]
 mod wifi_config;
 
 use wifi_config::{
-    ApplicationWaitDeadline, CONNECT_OPERATION_TIMEOUT, CONNECT_WAIT_DEADLINE,
-    INITIALIZE_WAIT_DEADLINE, SCAN_CAPACITY, SCAN_OPERATION_TIMEOUT, SCAN_WAIT_DEADLINE,
-    WIFI_PASSPHRASE, WIFI_SSID,
+    CONNECT_OPERATION_TIMEOUT, CONNECT_WAIT_DEADLINE, INITIALIZE_WAIT_DEADLINE, RUNNER_BUDGET,
+    SCAN_CAPACITY, SCAN_OPERATION_TIMEOUT, SCAN_WAIT_DEADLINE, WIFI_PASSPHRASE, WIFI_SSID,
 };
 
-type Uart0<'a> = Uart<'a, hisi_hal::peripherals::Uart0<'a>>;
+type Uart0 = Uart<'static, hisi_hal::peripherals::Uart0<'static>>;
 
-struct DiagnosticWriter<'a, 'd>(&'a Uart0<'d>);
+struct DiagnosticWriter<'a>(&'a Uart0);
 
-impl fmt::Write for DiagnosticWriter<'_, '_> {
+impl fmt::Write for DiagnosticWriter<'_> {
     fn write_str(&mut self, value: &str) -> fmt::Result {
         self.0.write(value.as_bytes());
         Ok(())
     }
 }
 
-fn fail_with_radio_diagnostic(uart: &Uart0<'_>, diagnostic: hisi_rf::Diagnostic) -> ! {
+fn fail_with_radio_diagnostic(uart: &Uart0, diagnostic: hisi_rf::Diagnostic) -> ! {
     uart.write(b"WIFI_ERROR ");
     let mut writer = DiagnosticWriter(uart);
     let _ = diagnostic.write_json(&mut writer);
@@ -47,7 +48,7 @@ fn fail_with_radio_diagnostic(uart: &Uart0<'_>, diagnostic: hisi_rf::Diagnostic)
     halt()
 }
 
-fn fail_with_configuration(uart: &Uart0<'_>, code: &[u8], action: &[u8]) -> ! {
+fn fail_with_configuration(uart: &Uart0, code: &[u8], action: &[u8]) -> ! {
     uart.write(b"WIFI_ERROR {\"schema\":\"hisi-rf-application-config/v1\",\"code\":\"");
     uart.write(code);
     uart.write(b"\",\"action\":\"");
@@ -56,7 +57,7 @@ fn fail_with_configuration(uart: &Uart0<'_>, code: &[u8], action: &[u8]) -> ! {
     halt()
 }
 
-fn fail_with_rtos_start(uart: &Uart0<'_>, error: hisi_rtos::StartError) -> ! {
+fn fail_with_rtos_start(uart: &Uart0, error: hisi_rtos::StartError) -> ! {
     let code = match error {
         hisi_rtos::StartError::AlreadyStarted => b"runtime.already-started".as_slice(),
         hisi_rtos::StartError::Driver(_) => b"runtime.driver-registration".as_slice(),
@@ -73,6 +74,9 @@ static RTOS_STORAGE: hisi_rtos::SchedulerStorage<15> = hisi_rtos::SchedulerStora
 static RTOS_ARENA: hisi_rtos::SchedulerArena<
     { hisi_rf::ws63::SELECTED_RUNTIME_ARENA_BYTES },
 > = hisi_rtos::SchedulerArena::new();
+static EXECUTOR: StaticCell<Executor> = StaticCell::new();
+static UART: StaticCell<Uart0> = StaticCell::new();
+static RADIO_PARTS: StaticCell<RadioParts> = StaticCell::new();
 
 hisi_rtos::bind_interrupts!(struct RtosIrqs {
     TIMER_INT0 => hisi_rtos::ws63::TimerInterrupt;
@@ -91,30 +95,7 @@ fn contract_violation(_: hisi_rtos::ContractViolation) -> ! {
     panic!("hisi-rtos scheduler contract violation")
 }
 
-struct ApplicationDeadlineElapsed;
-
-fn block_on_radio<F: Future>(
-    future: F,
-    deadline: ApplicationWaitDeadline,
-) -> Result<F::Output, ApplicationDeadlineElapsed> {
-    let mut future = core::pin::pin!(future);
-    let mut context = Context::from_waker(Waker::noop());
-    let started = monotonic_ms();
-    loop {
-        if let Poll::Ready(output) = future.as_mut().poll(&mut context) {
-            return Ok(output);
-        }
-        if monotonic_ms().wrapping_sub(started) >= deadline.as_millis() {
-            return Err(ApplicationDeadlineElapsed);
-        }
-        // The application thread is an adopted cooperative RTOS task. Each
-        // pending poll explicitly gives the radio runner and vendor workers a
-        // scheduling point without importing the runtime-driver crate.
-        hisi_rtos::request_reschedule();
-    }
-}
-
-fn fail_with_application_deadline(uart: &Uart0<'_>, stage: &[u8]) -> ! {
+fn fail_with_application_deadline(uart: &Uart0, stage: &[u8]) -> ! {
     uart.write(b"WIFI_ERROR {\"schema\":\"hisi-rf-application-wait/v1\",");
     uart.write(b"\"code\":\"application.deadline\",\"stage\":\"");
     uart.write(stage);
@@ -132,7 +113,7 @@ fn select_network<'a>(results: &'a [ScanResult], ssid: &[u8]) -> Option<&'a Scan
     results.iter().find(|result| result.ssid.as_bytes() == ssid)
 }
 
-fn write_ipv4(uart: &Uart0<'_>, address: [u8; 4]) {
+fn write_ipv4(uart: &Uart0, address: [u8; 4]) {
     for (index, octet) in address.iter().enumerate() {
         if index != 0 {
             uart.write(b".");
@@ -154,17 +135,17 @@ fn write_ipv4(uart: &Uart0<'_>, address: [u8; 4]) {
     }
 }
 
-fn run_smoltcp(uart: &Uart0<'_>, mut device: hisi_rf::ws63::WifiDevice, mac: [u8; 6]) -> ! {
+async fn run_smoltcp(uart: &Uart0, device: &mut WifiDevice, mac: [u8; 6]) -> ! {
     let mut config = InterfaceConfig::new(HardwareAddress::Ethernet(EthernetAddress(mac)));
     config.random_seed = monotonic_ms();
-    let mut interface = Interface::new(config, &mut device, network_now());
+    let mut interface = Interface::new(config, device, network_now());
     let mut socket_storage = [SocketStorage::EMPTY; 1];
     let mut sockets = SocketSet::new(&mut socket_storage[..]);
     let dhcp = sockets.add(dhcpv4::Socket::new());
 
     uart.write(b"WIFI_IP_STACK_BEGIN stack=smoltcp dhcp=1\r\n");
     loop {
-        let _ = interface.poll(network_now(), &mut device, &mut sockets);
+        let _ = interface.poll(network_now(), device, &mut sockets);
         match sockets.get_mut::<dhcpv4::Socket>(dhcp).poll() {
             Some(dhcpv4::Event::Configured(config)) => {
                 interface.update_ip_addrs(|addresses| {
@@ -190,20 +171,20 @@ fn run_smoltcp(uart: &Uart0<'_>, mut device: hisi_rf::ws63::WifiDevice, mac: [u8
             }
             None => {}
         }
-        hisi_rtos::request_reschedule();
+        Timer::after(Duration::from_millis(1)).await;
     }
 }
 
 #[entry]
 fn main() -> ! {
     let p = Peripherals::take().expect("peripherals already taken");
-    let uart = Uart::new_uart0(
+    let uart = UART.init(Uart::new_uart0(
         p.UART0,
         UartConfig {
             clock: UartClock::Boot,
             ..UartConfig::default()
         },
-    );
+    ));
     Watchdog::new(p.WDT).disable();
 
     if WIFI_SSID.is_empty() || WIFI_PASSPHRASE.is_empty() {
@@ -234,7 +215,7 @@ fn main() -> ! {
     let rf_ready = RfPower::new(p.CMU, p.CLDO_CRG).enable(p.EFUSE, &mut delay);
     let (_cldo_crg, efuse) = rf_ready.into_parts();
 
-    let _runtime = match hisi_rtos::ws63::start(
+    let runtime = match hisi_rtos::ws63::start(
         hisi_rtos::ws63::Config {
             minimum_stack_size: NonZeroUsize::new(
                 hisi_rf::ws63::SELECTED_MINIMUM_TASK_STACK_BYTES,
@@ -254,6 +235,29 @@ fn main() -> ! {
         Ok(runtime) => runtime,
         Err(error) => fail_with_rtos_start(&uart, error),
     };
+    let main_task = runtime.handle().current_task().unwrap_or_else(|_| {
+        fail_with_configuration(
+            uart,
+            b"runtime.main-task",
+            b"start the executor from the adopted RTOS main task",
+        )
+    });
+    if runtime
+        .handle()
+        .set_task_run_policy(
+            main_task,
+            hisi_rtos::RunPolicy::Preemptive {
+                time_slice: NonZeroU32::new(5).expect("non-zero executor time slice"),
+            },
+        )
+        .is_err()
+    {
+        fail_with_configuration(
+            uart,
+            b"runtime.executor-policy",
+            b"configure the adopted executor task with a valid preemptive policy",
+        );
+    }
 
     let (control_storage, radio_arena) = installed_storage.into_init_parts();
     let resources =
@@ -265,24 +269,54 @@ fn main() -> ! {
             Ok(controller) => controller,
             Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
         };
-    let mut wifi = match controller.start_runner() {
-        Ok(wifi) => wifi,
-        Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
-    };
+    let parts = RADIO_PARTS.init(controller.split(RUNNER_BUDGET));
+    start_executor(parts, uart)
+}
 
-    let initialized = block_on_radio(wifi.controller.initialize(), INITIALIZE_WAIT_DEADLINE)
-        .unwrap_or_else(|_| fail_with_application_deadline(&uart, b"initialize"));
+fn start_executor(parts: &'static mut RadioParts, uart: &'static Uart0) -> ! {
+    let RadioParts { wifi, runner } = parts;
+    let executor = EXECUTOR.init(Executor::new());
+    executor.run(|spawner: Spawner| {
+        spawner.spawn(radio_runner(runner).unwrap());
+        spawner.spawn(
+            wifi_application(
+                &mut wifi.controller,
+                &mut wifi.device,
+                uart,
+            )
+            .unwrap(),
+        );
+    })
+}
+
+#[embassy_executor::task]
+async fn radio_runner(runner: &'static mut RadioRunner) {
+    loop {
+        let ready = runner.wait_ready().await.expect("infallible WS63 wait");
+        runner.run_once(ready).expect("bounded radio runner");
+    }
+}
+
+#[embassy_executor::task]
+async fn wifi_application(
+    controller: &'static mut WifiController,
+    device: &'static mut WifiDevice,
+    uart: &'static Uart0,
+) {
+    let initialized = with_timeout(INITIALIZE_WAIT_DEADLINE, controller.initialize())
+        .await
+        .unwrap_or_else(|_| fail_with_application_deadline(uart, b"initialize"));
     if let Err(error) = initialized {
-        fail_with_radio_diagnostic(&uart, error.diagnostic());
+        fail_with_radio_diagnostic(uart, error.diagnostic());
     }
     uart.write(b"WIFI_INIT_OK\r\n");
 
     let mut results = [ScanResult::empty(); SCAN_CAPACITY];
-    let outcome = block_on_radio(
-        wifi.controller
-            .scan(ScanConfig::new(SCAN_OPERATION_TIMEOUT), &mut results),
+    let outcome = with_timeout(
         SCAN_WAIT_DEADLINE,
+        controller.scan(ScanConfig::new(SCAN_OPERATION_TIMEOUT), &mut results),
     )
+    .await
     .unwrap_or_else(|_| fail_with_application_deadline(&uart, b"scan"))
     .unwrap_or_else(|error| fail_with_radio_diagnostic(&uart, error.diagnostic()));
     uart.write(b"WIFI_SCAN_OK\r\n");
@@ -309,16 +343,16 @@ fn main() -> ! {
                 b"select a WPA2-Personal network",
             )
         });
-    let connected = block_on_radio(wifi.controller.connect(station), CONNECT_WAIT_DEADLINE)
+    let connected = with_timeout(CONNECT_WAIT_DEADLINE, controller.connect(station))
+        .await
         .unwrap_or_else(|_| fail_with_application_deadline(&uart, b"connect"));
     if let Err(error) = connected {
         fail_with_radio_diagnostic(&uart, error.diagnostic());
     }
     uart.write(b"WIFI_CONNECT_OK\r\n");
 
-    let mac = wifi
-        .device
+    let mac = device
         .station_mac_address()
         .expect("station MAC unavailable after init");
-    run_smoltcp(&uart, wifi.device, mac)
+    run_smoltcp(uart, device, mac).await
 }

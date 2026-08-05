@@ -61,8 +61,9 @@ WS63_WIFI_SSID='your-network' WS63_WIFI_PASSPHRASE='your-passphrase' just flash
 ```
 
 The application starts the native RTOS port, claims the named
-`profile-wifi-wpa2-smoltcp` resources, starts the storage-bound radio runner,
-then performs initialize, scan and connect before handing `WifiDevice` to a
+`profile-wifi-wpa2-smoltcp` resources, and runs the storage-bound `RadioRunner`
+beside the Wi-Fi control and smoltcp tasks on one Embassy executor. The control
+task performs initialize, scan and connect before handing `WifiDevice` to a
 long-lived smoltcp DHCP loop. Expected UART markers are `WIFI_INIT_OK`,
 `WIFI_SCAN_OK`, `WIFI_CONNECT_OK`, and finally `WIFI_DHCP_OK`.
 

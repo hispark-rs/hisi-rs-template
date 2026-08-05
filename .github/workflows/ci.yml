@@ -87,6 +87,13 @@ jobs:
           grep -q 'hisi_rtos::bind_interrupts!' src/wifi.rs
           grep -q 'hisi_rtos::SchedulerStorage' src/wifi.rs
           grep -q 'hisi_rtos::SchedulerArena' src/wifi.rs
+          grep -q 'controller.split(RUNNER_BUDGET)' src/wifi.rs
+          grep -q 'runner.wait_ready().await' src/wifi.rs
+          grep -q 'runner.run_once(ready)' src/wifi.rs
+          if grep -q 'start_runner' src/wifi.rs; then
+            echo "generated Wi-Fi starter still uses the removed blocking runner facade" >&2
+            exit 1
+          fi
           if grep -q 'SchedulerStackArena' src/wifi.rs; then
             echo "generated Wi-Fi starter still uses the deprecated stack-only arena name" >&2
             exit 1
@@ -121,20 +128,23 @@ jobs:
           test -s ${{ matrix.crate }}.plan.json
           if [ "${{ matrix.starter }}" = "wifi" ]; then
             test -s ${{ matrix.crate }}.resource.json
-            grep -q '"schema":"hisi-rf-resource-report/v9"' ${{ matrix.crate }}.resource.json
+            grep -q '"schema":"hisi-rf-resource-report/v10"' ${{ matrix.crate }}.resource.json
             grep -q '"profile":"wifi-wpa2-smoltcp"' ${{ matrix.crate }}.resource.json
-            grep -q '"profile_revision":"ws63-wifi-2026-08-03-r8"' ${{ matrix.crate }}.resource.json
-            grep -q '"runtime_resources_calibrated":true' ${{ matrix.crate }}.resource.json
+            grep -q '"profile_revision":"ws63-wifi-2026-08-03-r9"' ${{ matrix.crate }}.resource.json
+            grep -q '"runtime_resources_calibrated":false' ${{ matrix.crate }}.resource.json
             grep -q '"event_capacity":8' ${{ matrix.crate }}.resource.json
-            grep -q '"control_storage_bytes":8608' ${{ matrix.crate }}.resource.json
-            grep -q '"radio_state_bytes":2216' ${{ matrix.crate }}.resource.json
-            grep -q '"task_stack_bytes":172032' ${{ matrix.crate }}.resource.json
-            grep -q '"minimum_task_stack_bytes":24576' ${{ matrix.crate }}.resource.json
+            grep -q '"control_storage_bytes":8800' ${{ matrix.crate }}.resource.json
+            grep -q '"radio_state_bytes":2288' ${{ matrix.crate }}.resource.json
+            grep -q '"dynamic_tasks_required":8' ${{ matrix.crate }}.resource.json
+            grep -q '"vendor_task_slots":7' ${{ matrix.crate }}.resource.json
+            grep -q '"worker_task_slots":1' ${{ matrix.crate }}.resource.json
+            grep -q '"task_stack_bytes":180224' ${{ matrix.crate }}.resource.json
+            grep -q '"minimum_task_stack_bytes":8192' ${{ matrix.crate }}.resource.json
             grep -q '"runtime_object_headroom_bytes":16384' ${{ matrix.crate }}.resource.json
-            grep -q '"runtime_arena_bytes":188928' ${{ matrix.crate }}.resource.json
-            grep -q '"arena_storage_bytes":114240' ${{ matrix.crate }}.resource.json
-            grep -q '"shared_rf_arena_bytes":114176' ${{ matrix.crate }}.resource.json
-            grep -q '"caller_owned_bytes":311776' ${{ matrix.crate }}.resource.json
+            grep -q '"runtime_arena_bytes":197120' ${{ matrix.crate }}.resource.json
+            grep -q '"arena_storage_bytes":101888' ${{ matrix.crate }}.resource.json
+            grep -q '"shared_rf_arena_bytes":101824' ${{ matrix.crate }}.resource.json
+            grep -q '"caller_owned_bytes":307808' ${{ matrix.crate }}.resource.json
           fi
 
   wifi-resource-report:

@@ -8,6 +8,14 @@ application version, not the template version.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.83` and
+  `hisi-rtos 0.1.0-alpha.22`. Generated projects now use the named bounded
+  profile through the public facade and continuously drive `RadioRunner`
+  beside the Wi-Fi control and smoltcp tasks on Embassy; the removed blocking
+  facade is no longer part of the generated happy path.
+
 ## [0.7.0-alpha.27] - 2026-08-03
 
 ### Fixed
