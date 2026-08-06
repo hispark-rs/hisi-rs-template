@@ -16,7 +16,8 @@ unit is a Git tag and GitHub Release in the template repository.
 
 | Template tag | HAL package | HAL version | Runtime | WS63 PAC | BS2X PAC | RF facade | Image tool |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `Unreleased` | `hisi-hal` | `0.7.0-alpha.6` | `0.5.7` + `hisi-rtos 0.1.0-alpha.23` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.83` | `hisi-fwpkg-cli 0.3.2` |
+| `Unreleased` | `hisi-hal` | `0.7.0-alpha.6` | `0.5.7` + `hisi-rtos 0.1.0-alpha.23` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.84` | `hisi-fwpkg-cli 0.3.2` |
+| `v0.7.0-alpha.29` | `hisi-hal` | `0.7.0-alpha.6` | `0.5.7` + `hisi-rtos 0.1.0-alpha.23` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.84` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.28` | `hisi-hal` | `0.7.0-alpha.6` | `0.5.7` + `hisi-rtos 0.1.0-alpha.23` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.83` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.27` | `hisi-hal` | `0.7.0-alpha.6` | `0.5.7` + `hisi-rtos 0.1.0-alpha.18` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.75` | `hisi-fwpkg-cli 0.3.2` |
 | `v0.7.0-alpha.26` | `hisi-hal` | `0.7.0-alpha.6` | `0.5.7` + `hisi-rtos 0.1.0-alpha.18` | `0.4.0` | `0.1.2` | `hisi-rf 0.1.0-alpha.75` | `hisi-fwpkg-cli 0.3.2` |

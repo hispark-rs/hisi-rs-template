@@ -12,7 +12,7 @@ default-members = ["."]
 resolver = "2"
 
 [workspace.dependencies]
-hisi-rf = { version = "=0.1.0-alpha.83", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
+hisi-rf = { version = "=0.1.0-alpha.84", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
 {%- endif %}
 
 [[bin]]

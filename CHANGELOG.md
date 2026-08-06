@@ -8,6 +8,16 @@ application version, not the template version.
 
 ## [Unreleased]
 
+## [0.7.0-alpha.29] - 2026-08-06
+
+### Changed
+
+- Updated the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.84`. The generated
+  project now resolves the released B0 chain through
+  `hisi-rf-ws63 0.1.0-alpha.72` and `ws63-radio-sys 0.1.0-alpha.12`, while
+  retaining the bounded runner lifecycle and portable external-consumer build
+  contract.
+
 ## [0.7.0-alpha.28] - 2026-08-06
 
 ### Changed
