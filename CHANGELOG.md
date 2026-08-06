@@ -8,6 +8,9 @@ application version, not the template version.
 
 ## [Unreleased]
 
+- Updated generated WS63 Wi-Fi projects to `hisi-rf 0.1.0-alpha.85` so the
+  template follows the current facade release train.
+
 ## [0.7.0-alpha.29] - 2026-08-06
 
 ### Changed
