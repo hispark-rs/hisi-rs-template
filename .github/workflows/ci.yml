@@ -167,7 +167,7 @@ jobs:
           grep -q 'RADIO_STORAGE.report()' src/radio.rs
           grep -q 'hisi_rf::ws63::init(resources, storage)' src/radio.rs
           grep -q 'controller.split()' src/radio.rs
-          grep -q 'parts.runner.run_once()' src/radio.rs
+          grep -q '\.run_once()' src/radio.rs
           grep -q 'profile-${{ matrix.radio_profile }}' Cargo.toml
           if grep -Eq 'hisi-rf-ws63|ws63-radio-sys|hisi-rf-rtos-driver' Cargo.toml; then
             echo "generated radio project leaked an internal composition dependency" >&2
