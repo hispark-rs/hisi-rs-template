@@ -8,8 +8,23 @@ application version, not the template version.
 
 ## [Unreleased]
 
-- Updated generated WS63 Wi-Fi projects to `hisi-rf 0.1.0-alpha.85` so the
-  template follows the current facade release train.
+## [0.7.0-alpha.30] - 2026-08-29
+
+### Added
+
+- Add a WS63 `radio` starter with six named BLE/SLE profiles. Generated
+  firmware owns one static radio composition, starts the RTOS port, initializes
+  the public `hisi-rf` facade, and exercises the selected typed role operation.
+- Emit a versioned machine-readable BLE/SLE resource report from the same
+  caller-owned `RadioStorage` used by firmware.
+- Generate and build every BLE/SLE profile in CI, while macOS, Linux, and
+  Windows validate representative Wi-Fi, BLE, and SLE host reports.
+
+### Changed
+
+- Update generated WS63 radio projects to `hisi-rf 0.1.0-alpha.99`,
+  `hisi-rf-ws63 0.1.0-alpha.84`, `hisi-rtos 0.1.0-alpha.24`,
+  `hisi-hal 0.7.0-alpha.9`, and `hisi-riscv-rt 0.5.10`.
 
 ## [0.7.0-alpha.29] - 2026-08-06
 

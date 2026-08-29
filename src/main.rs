@@ -260,4 +260,20 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
     }
 }
 {%- endif %}
+{%- when "radio" -%}
+#![no_std]
+#![no_main]
+
+{% if chip == "ws63" -%}
+include!("radio.rs");
+{%- else -%}
+compile_error!("the radio starter currently supports only chip=ws63");
+
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {
+        core::hint::spin_loop();
+    }
+}
+{%- endif %}
 {%- endcase %}

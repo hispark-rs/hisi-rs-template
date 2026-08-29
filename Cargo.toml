@@ -5,14 +5,16 @@ edition = "2024"
 authors = ["{{authors}}"]
 license = "MIT"
 
-{%- if starter == "wifi" and chip == "ws63" %}
+{%- if chip == "ws63" %}
+{%- if starter == "wifi" or starter == "radio" %}
 [workspace]
 members = [".", "tools/rf-resource-report"]
 default-members = ["."]
 resolver = "2"
 
 [workspace.dependencies]
-hisi-rf = { version = "=0.1.0-alpha.85", features = ["chip-ws63", "profile-wifi-wpa2-smoltcp"] }
+hisi-rf = { version = "=0.1.0-alpha.99", features = ["chip-ws63", "{% if starter == "wifi" %}profile-wifi-wpa2-smoltcp{% else %}profile-{{ radio_profile }}{% endif %}"] }
+{%- endif %}
 {%- endif %}
 
 [[bin]]
@@ -23,11 +25,11 @@ path = "src/main.rs"
 {%- if chip == "ws63" %}
 # 0.5.0+ has NO default chip (esp-hal style) — every consumer names one, so
 # chip-ws63 is required here (a missing chip is a clear compile_error).
-hisi-hal = { version = "0.7.0-alpha.6", features = ["chip-ws63"{% if starter == "async" %}, "embassy", "unstable"{% elsif starter == "wifi" %}, "unstable"{% endif %}] }
+hisi-hal = { version = "0.7.0-alpha.9", features = ["chip-ws63"{% if starter == "async" %}, "embassy", "unstable"{% elsif starter == "wifi" or starter == "radio" %}, "unstable"{% endif %}] }
 # `boot-header` bakes the 0x300 boot header into the ELF at link time. `just flash`
 # still uses `hisi-fwpkg plan --image-output` so probe-rs writes a complete bin
 # image; `patch-hash` is reserved for ELF-based `probe-rs run`/embedded-test paths.
-hisi-riscv-rt = { version = "0.5.7", features = ["chip-ws63", "boot-header"{% if starter == "wifi" %}, "ws63-bgle-32k", "ws63-radio-main-stack-32k"{% endif %}] }
+hisi-riscv-rt = { version = "0.5.10", features = ["chip-ws63", "boot-header"{% if starter == "wifi" or starter == "radio" %}, "ws63-bgle-32k", "ws63-radio-main-stack-32k"{% endif %}] }
 ws63-pac = "0.4.0"
 {%- else %}
 # chip-bs21 covers the whole BS2X family (BS21/BS22/BS20); the chip differs only
@@ -50,9 +52,14 @@ embassy-executor = { version = "0.10", features = ["platform-riscv32", "executor
 embassy-time = { version = "0.5", default-features = false }
 hisi-panic-handler = { version = "0.1.0", default-features = false, features = ["panic-uart0"] }
 hisi-rf = { workspace = true }
-hisi-rtos = { version = "=0.1.0-alpha.23", features = ["chip-ws63", "embassy"] }
+hisi-rtos = { version = "=0.1.0-alpha.24", features = ["chip-ws63", "embassy"] }
 smoltcp = { version = "0.13", default-features = false, features = ["medium-ethernet", "proto-ipv4", "socket-dhcpv4"] }
 static_cell = "2"
+{%- endif %}
+{%- if starter == "radio" and chip == "ws63" %}
+hisi-panic-handler = { version = "0.1.0", default-features = false, features = ["panic-uart0"] }
+hisi-rf = { workspace = true }
+hisi-rtos = { version = "=0.1.0-alpha.24", features = ["chip-ws63"] }
 {%- endif %}
 
 [profile.release]

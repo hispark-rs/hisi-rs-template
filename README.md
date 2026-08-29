@@ -24,7 +24,7 @@ Starter: **{{starter}}**.
 
    `rust-toolchain.toml` already pins this nightly, so cargo picks it up here.
 
-{% if starter != "wifi" %}2. **QEMU** (for `cargo run`) — the [hisi-riscv-qemu](https://github.com/hispark-rs/hisi-riscv-qemu)
+{% if starter != "wifi" and starter != "radio" %}2. **QEMU** (for `cargo run`) — the [hisi-riscv-qemu](https://github.com/hispark-rs/hisi-riscv-qemu)
    fork, which adds the `-M {{chip}}` machine. Build it and put its
    `qemu-system-riscv32` on your `PATH`:
 
@@ -72,6 +72,32 @@ long-lived smoltcp DHCP loop. Expected UART markers are `WIFI_INIT_OK`,
 firmware and depends on no WS63 sys/blob/RTOS-driver crate directly. Review this
 resource contract together with `{{crate_name}}.plan.json` before changing the
 profile or memory layout.
+{% elsif starter == "radio" %}
+## Run on WS63
+
+This project selects the named `profile-{{radio_profile}}` composition. It owns
+one static radio arena, starts the WS63 RTOS port, initializes the shared radio
+controller, then exercises the profile's first typed operation:
+
+| Profile | Starter operation |
+|---|---|
+| `ble-peripheral` | BLE advertising |
+| `ble-central` | BLE passive scan |
+| `ble-dual-role` | BLE advertising; central methods remain available |
+| `sle-announce` | SLE announce |
+| `sle-seek` | SLE seek |
+| `sle-ssap` | SLE announce; SSAP registration remains available |
+
+Build and flash with `just flash`. Successful initialization and command
+acceptance emit `RADIO_INIT_OK profile={{radio_profile}}` and
+`RADIO_COMMAND_OK profile={{radio_profile}}`. These markers prove the selected
+controller/host accepted the operation; peer-visible behavior still requires a
+second-board HIL.
+
+`just resource-report` writes `{{crate_name}}.resource.json` from the same
+caller-owned `RadioStorage` used by the firmware. It is the machine-readable
+source for arena bytes, control bytes, task slots/stacks, and event capacities;
+the generated project does not duplicate those numbers.
 {% else %}
 ## Run (QEMU)
 
@@ -111,6 +137,9 @@ Expected: two async tasks interleave on the embassy executor:
 {% if starter == "wifi" %}> The generated project's build and image contracts are CI-validated. On real WS63
 > silicon, treat the four UART markers above as the end-to-end HIL acceptance
 > gate; do not infer radio success from a successful build alone.
+{% elsif starter == "radio" %}> The generated project's build and image contracts are CI-validated. On real WS63
+> silicon, require the two `RADIO_*_OK` markers above and a peer-visible
+> profile-specific HIL before treating the radio operation as end-to-end proven.
 {% else %}> Validated end-to-end on real {% if chip == "ws63" %}WS63{% else %}{{chip}}{% endif %} silicon
 > (blinky boots + blinks, 2026-06-14){% if chip != "ws63" %} for WS63; the BS2X address
 > below is `hisi-fwpkg`'s default and is **not yet HIL-validated** — confirm it
@@ -201,7 +230,8 @@ for wiring and the vendor `burntool` / `loaderboot` UART flow.
 |------|---------|
 | `src/main.rs` | The `{{starter}}` application. |
 {% if starter == "wifi" %}| `src/wifi.rs` | The WS63 radio/runtime/smoltcp happy path; credentials come only from build environment variables. |
-{% endif %}| `Cargo.toml` | Depends on `hisi-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% elsif starter == "wifi" %} + `hisi-rf` / `hisi-rtos` / smoltcp{% endif %} from crates.io. |
+{% elsif starter == "radio" %}| `src/radio.rs` | The WS63 `profile-{{radio_profile}}` composition, typed operation, runner, and RTOS wiring. |
+{% endif %}| `Cargo.toml` | Depends on `hisi-hal` / `hisi-riscv-rt`{% if starter == "async" %} + embassy{% elsif starter == "wifi" %} + `hisi-rf` / `hisi-rtos` / smoltcp{% elsif starter == "radio" %} + `hisi-rf` / `hisi-rtos`{% endif %} from crates.io. |
 | `.cargo/config.toml` | RISC-V target + the `cargo run` QEMU runner. |
 | `justfile` | `just build` / `run` / `image` / `flash`{% if chip == "ws63" %} / `patch` / `run-hw`{% endif %} / `fwpkg` convenience recipes. |
 | `rust-toolchain.toml` | Pins the official nightly used by this project. |

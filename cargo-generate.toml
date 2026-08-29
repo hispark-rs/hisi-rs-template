@@ -14,8 +14,21 @@ default = "ws63"
 [placeholders.starter]
 type = "string"
 prompt = "Starter app"
-choices = ["blinky", "uart_hello", "async", "wifi"]
+choices = ["blinky", "uart_hello", "async", "wifi", "radio"]
 default = "blinky"
+
+[conditional.'starter == "radio"'.placeholders.radio_profile]
+type = "string"
+prompt = "Radio profile"
+choices = [
+    "ble-peripheral",
+    "ble-central",
+    "ble-dual-role",
+    "sle-announce",
+    "sle-seek",
+    "sle-ssap",
+]
+default = "ble-peripheral"
 
 # Optional flash address override for the `app` partition that flashboot loads.
 # `hisi-fwpkg plan` knows the per-chip default and emits `base_addr`; the
@@ -32,7 +45,13 @@ default = "blinky"
 ignore = ["memory.x"]
 
 [conditional.'starter != "wifi"']
-ignore = ["src/wifi.rs", "src/wifi_config.rs", "tools/rf-resource-report"]
+ignore = ["src/wifi.rs", "src/wifi_config.rs"]
+
+[conditional.'starter != "radio"']
+ignore = ["src/radio.rs"]
+
+[conditional.'starter != "wifi" && starter != "radio"']
+ignore = ["tools/rf-resource-report"]
 
 [conditional.'chip == "ws63"'.placeholders.app_partition_addr]
 type = "string"

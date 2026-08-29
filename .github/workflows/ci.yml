@@ -40,6 +40,48 @@ jobs:
             crate: hp_ws63_wifi
             app_addr: "0x00230000"
             image: true
+          - chip: ws63
+            starter: radio
+            radio_profile: ble-peripheral
+            project: hp-ws63-ble-peripheral
+            crate: hp_ws63_ble_peripheral
+            app_addr: "0x00230000"
+            image: true
+          - chip: ws63
+            starter: radio
+            radio_profile: ble-central
+            project: hp-ws63-ble-central
+            crate: hp_ws63_ble_central
+            app_addr: "0x00230000"
+            image: false
+          - chip: ws63
+            starter: radio
+            radio_profile: ble-dual-role
+            project: hp-ws63-ble-dual-role
+            crate: hp_ws63_ble_dual_role
+            app_addr: "0x00230000"
+            image: false
+          - chip: ws63
+            starter: radio
+            radio_profile: sle-announce
+            project: hp-ws63-sle-announce
+            crate: hp_ws63_sle_announce
+            app_addr: "0x00230000"
+            image: true
+          - chip: ws63
+            starter: radio
+            radio_profile: sle-seek
+            project: hp-ws63-sle-seek
+            crate: hp_ws63_sle_seek
+            app_addr: "0x00230000"
+            image: false
+          - chip: ws63
+            starter: radio
+            radio_profile: sle-ssap
+            project: hp-ws63-sle-ssap
+            crate: hp_ws63_sle_ssap
+            app_addr: "0x00230000"
+            image: false
           - chip: bs21
             starter: blinky
             project: hp-bs21-blinky
@@ -61,15 +103,19 @@ jobs:
           cargo +stable install hisi-fwpkg-cli --version 0.3.2
 
       - name: Generate project
+        shell: bash
         run: |
-          cargo generate --path . --name ${{ matrix.project }} \
-            --define chip=${{ matrix.chip }} \
-            --define starter=${{ matrix.starter }} \
-            --define app_partition_addr=${{ matrix.app_addr }} \
-            --vcs none \
-            --no-workspace \
-            --destination "$RUNNER_TEMP" \
-            --silent
+          args=(
+            --path . --name "${{ matrix.project }}"
+            --define chip=${{ matrix.chip }}
+            --define starter=${{ matrix.starter }}
+            --define app_partition_addr=${{ matrix.app_addr }}
+            --vcs none --no-workspace --destination "$RUNNER_TEMP" --silent
+          )
+          if [ "${{ matrix.starter }}" = radio ]; then
+            args+=(--define radio_profile=${{ matrix.radio_profile }})
+          fi
+          cargo generate "${args[@]}"
 
       - name: Check generated project
         working-directory: ${{ runner.temp }}/${{ matrix.project }}
@@ -111,6 +157,23 @@ jobs:
             exit 1
           fi
 
+      - name: Check radio composition contract
+        if: matrix.starter == 'radio'
+        working-directory: ${{ runner.temp }}/${{ matrix.project }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'hisi_rf::declare_radio_storage!' src/radio.rs
+          grep -q 'RADIO_STORAGE.report()' src/radio.rs
+          grep -q 'hisi_rf::ws63::init(resources, storage)' src/radio.rs
+          grep -q 'controller.split()' src/radio.rs
+          grep -q 'parts.runner.run_once()' src/radio.rs
+          grep -q 'profile-${{ matrix.radio_profile }}' Cargo.toml
+          if grep -Eq 'hisi-rf-ws63|ws63-radio-sys|hisi-rf-rtos-driver' Cargo.toml; then
+            echo "generated radio project leaked an internal composition dependency" >&2
+            exit 1
+          fi
+
       - name: Build generated project
         working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: cargo build -Zbuild-std=core,alloc --release
@@ -118,6 +181,18 @@ jobs:
       - name: Check just recipes
         working-directory: ${{ runner.temp }}/${{ matrix.project }}
         run: just --list
+
+      - name: Emit radio resource report
+        if: matrix.starter == 'radio'
+        working-directory: ${{ runner.temp }}/${{ matrix.project }}
+        shell: bash
+        run: |
+          just resource-report
+          test -s ${{ matrix.crate }}.resource.json
+          grep -q '"schema":"hisi-rf-radio-resource-report/v1"' ${{ matrix.crate }}.resource.json
+          grep -q '"profile":"${{ matrix.radio_profile }}"' ${{ matrix.crate }}.resource.json
+          grep -q '"dynamic_task_slots":4' ${{ matrix.crate }}.resource.json
+          grep -q '"task_stack_bytes":10240' ${{ matrix.crate }}.resource.json
 
       - name: Build plan image
         if: matrix.image
@@ -145,10 +220,13 @@ jobs:
             grep -q '"arena_storage_bytes":101888' ${{ matrix.crate }}.resource.json
             grep -q '"shared_rf_arena_bytes":101824' ${{ matrix.crate }}.resource.json
             grep -q '"caller_owned_bytes":307808' ${{ matrix.crate }}.resource.json
+          elif [ "${{ matrix.starter }}" = "radio" ]; then
+            grep -q '"schema":"hisi-rf-radio-resource-report/v1"' ${{ matrix.crate }}.resource.json
+            grep -q '"profile":"${{ matrix.radio_profile }}"' ${{ matrix.crate }}.resource.json
           fi
 
-  wifi-resource-report:
-    name: Wi-Fi resource report / ${{ matrix.os }}
+  resource-report:
+    name: Radio resource report / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -175,10 +253,24 @@ jobs:
         working-directory: ${{ runner.temp }}/hp-ws63-wifi
         run: just resource-report
 
+      - name: Generate BLE peripheral project
+        run: cargo +stable generate --path . --name hp-ws63-ble-peripheral --define chip=ws63 --define starter=radio --define radio_profile=ble-peripheral --define app_partition_addr=0x00230000 --vcs none --no-workspace --destination "${{ runner.temp }}" --silent
+
+      - name: Emit BLE profile resource report
+        working-directory: ${{ runner.temp }}/hp-ws63-ble-peripheral
+        run: just resource-report
+
+      - name: Generate SLE announce project
+        run: cargo +stable generate --path . --name hp-ws63-sle-announce --define chip=ws63 --define starter=radio --define radio_profile=sle-announce --define app_partition_addr=0x00230000 --vcs none --no-workspace --destination "${{ runner.temp }}" --silent
+
+      - name: Emit SLE profile resource report
+        working-directory: ${{ runner.temp }}/hp-ws63-sle-announce
+        run: just resource-report
+
   release:
     name: Publish template release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [generate, wifi-resource-report]
+    needs: [generate, resource-report]
     runs-on: ubuntu-latest
     permissions:
       contents: write
