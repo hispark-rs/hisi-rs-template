@@ -22,8 +22,8 @@ application version, not the template version.
 
 ### Changed
 
-- Update generated WS63 radio projects to `hisi-rf 0.1.0-alpha.99`,
-  `hisi-rf-ws63 0.1.0-alpha.84`, `hisi-rtos 0.1.0-alpha.24`,
+- Update generated WS63 radio projects to `hisi-rf 0.1.0-alpha.100`,
+  `hisi-rf-ws63 0.1.0-alpha.85`, `hisi-rtos 0.1.0-alpha.24`,
   `hisi-hal 0.7.0-alpha.9`, and `hisi-riscv-rt 0.5.10`.
 
 ## [0.7.0-alpha.29] - 2026-08-06

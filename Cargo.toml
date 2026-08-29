@@ -13,7 +13,7 @@ default-members = ["."]
 resolver = "2"
 
 [workspace.dependencies]
-hisi-rf = { version = "=0.1.0-alpha.99", features = ["chip-ws63", "{% if starter == "wifi" %}profile-wifi-wpa2-smoltcp{% else %}profile-{{ radio_profile }}{% endif %}"] }
+hisi-rf = { version = "=0.1.0-alpha.100", features = ["chip-ws63", "{% if starter == "wifi" %}profile-wifi-wpa2-smoltcp{% else %}profile-{{ radio_profile }}{% endif %}"] }
 {%- endif %}
 {%- endif %}
 
