@@ -13,7 +13,7 @@ default-members = ["."]
 resolver = "2"
 
 [workspace.dependencies]
-hisi-rf = { version = "=0.1.0-alpha.100", features = ["chip-ws63", "{% if starter == "wifi" %}profile-wifi-wpa2-smoltcp{% else %}profile-{{ radio_profile }}{% endif %}"] }
+hisi-rf = { version = "=0.1.0-alpha.111", features = ["chip-ws63", "{% if starter == "wifi" %}profile-wifi-wpa2-smoltcp{% else %}profile-{{ radio_profile }}{% endif %}"] }
 {%- endif %}
 {%- endif %}
 
@@ -52,14 +52,14 @@ embassy-executor = { version = "0.10", features = ["platform-riscv32", "executor
 embassy-time = { version = "0.5", default-features = false }
 hisi-panic-handler = { version = "0.1.0", default-features = false, features = ["panic-uart0"] }
 hisi-rf = { workspace = true }
-hisi-rtos = { version = "=0.1.0-alpha.24", features = ["chip-ws63", "embassy"] }
+hisi-rtos = { version = "=0.1.0-alpha.25", features = ["chip-ws63", "embassy"] }
 smoltcp = { version = "0.13", default-features = false, features = ["medium-ethernet", "proto-ipv4", "socket-dhcpv4"] }
 static_cell = "2"
 {%- endif %}
 {%- if starter == "radio" and chip == "ws63" %}
 hisi-panic-handler = { version = "0.1.0", default-features = false, features = ["panic-uart0"] }
 hisi-rf = { workspace = true }
-hisi-rtos = { version = "=0.1.0-alpha.24", features = ["chip-ws63"] }
+hisi-rtos = { version = "=0.1.0-alpha.25", features = ["chip-ws63"] }
 {%- endif %}
 
 [profile.release]

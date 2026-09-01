@@ -8,6 +8,12 @@ application version, not the template version.
 
 ## [Unreleased]
 
+### Changed
+
+- Update the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.111` and
+  `hisi-rtos 0.1.0-alpha.25`, consuming the facade-owned storage, resources,
+  and two-argument initialization contract.
+
 ## [0.7.0-alpha.30] - 2026-08-29
 
 ### Added

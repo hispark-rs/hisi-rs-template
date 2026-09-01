@@ -259,16 +259,11 @@ fn main() -> ! {
         );
     }
 
-    let (control_storage, radio_arena) = installed_storage.into_init_parts();
-    let resources =
-        hisi_rf::ws63::Resources::<hisi_rf::ws63::SelectedProfile>::builder(efuse, radio_arena)
-            .crypto(p.KM, p.SPACC, p.TRNG)
-            .build();
-    let controller =
-        match hisi_rf::ws63::init(wifi_config::radio_config(), resources, control_storage) {
-            Ok(controller) => controller,
-            Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
-        };
+    let resources = installed_storage.resources(efuse, p.KM, p.SPACC, p.TRNG);
+    let controller = match hisi_rf::ws63::init(wifi_config::radio_config(), resources) {
+        Ok(controller) => controller,
+        Err(error) => fail_with_radio_diagnostic(&uart, error.diagnostic()),
+    };
     let parts = RADIO_PARTS.init(controller.split(RUNNER_BUDGET));
     start_executor(parts, uart)
 }
