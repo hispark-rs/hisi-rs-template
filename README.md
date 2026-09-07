@@ -170,7 +170,7 @@ embedded-test paths that need symbols and semihosting metadata.
 
 * **`hisi-fwpkg`** — packs the ELF/bin into a bootable image (or a `.fwpkg`):
   ```bash
-  cargo +stable install hisi-fwpkg-cli --version 0.3.2
+  cargo +stable install hisi-fwpkg-cli --version 0.3.3 --locked
   ```
 * **The patched `probe-rs` FORK** — *upstream probe-rs does not support {{chip}} yet.*
   Install the fork (it also ships the `HiSilicon_WS63.yaml` chip description):

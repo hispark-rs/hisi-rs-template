@@ -10,6 +10,8 @@ application version, not the template version.
 
 ### Changed
 
+- Pin `hisi-fwpkg-cli 0.3.3` in image tooling and CI so public installs include
+  the corrected physical-load-address ELF expansion.
 - Update the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.114` and
   `hisi-rtos 0.1.0-alpha.25`, consuming the facade-owned storage, resources,
   and two-argument initialization contract.
