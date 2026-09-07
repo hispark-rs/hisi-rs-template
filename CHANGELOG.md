@@ -8,6 +8,11 @@ application version, not the template version.
 
 ## [Unreleased]
 
+### Fixed
+
+- Use the public installed-storage allocator capability in BLE/SLE starters;
+  generated projects no longer call private facade allocation functions.
+
 ### Changed
 
 - Pin `hisi-fwpkg-cli 0.3.3` in image tooling and CI so public installs include

@@ -33,16 +33,6 @@ fn contract_violation(_: hisi_rtos::ContractViolation) -> ! {
     panic!("hisi-rtos scheduler contract violation")
 }
 
-unsafe fn rtos_allocate(size: usize) -> *mut u8 {
-    // SAFETY: the process-lifetime radio storage is the RTOS allocator owner.
-    unsafe { hisi_rf::ws63::InstalledRadioStorage::allocate(size) }
-}
-
-unsafe fn rtos_deallocate(pointer: *mut u8) {
-    // SAFETY: `pointer` came from `rtos_allocate` in this runtime instance.
-    unsafe { hisi_rf::ws63::InstalledRadioStorage::deallocate(pointer) };
-}
-
 #[unsafe(no_mangle)]
 extern "C" fn TIMER_INT0() {
     TimerAlarm0::clear_interrupt();
@@ -75,6 +65,7 @@ fn main() -> ! {
     let storage = RADIO_STORAGE
         .install()
         .unwrap_or_else(|_| fail(&uart, b"RADIO_STORAGE_ERR\r\n"));
+    let allocator = storage.runtime_allocator();
 
     let mut delay = Delay::new();
     let rf_ready = RfPower::new(p.CMU, p.CLDO_CRG).enable(p.EFUSE, &mut delay);
@@ -90,8 +81,8 @@ fn main() -> ! {
             max_scheduler_lock_duration: NonZeroU32::new(5_000).unwrap(),
         },
         hisi_rtos::Resources {
-            allocate: rtos_allocate,
-            deallocate: rtos_deallocate,
+            allocate: allocator.allocate_callback(),
+            deallocate: allocator.deallocate_callback(),
             monotonic_ms,
         },
         hisi_rtos::SchedulerPort {
