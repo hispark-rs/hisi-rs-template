@@ -12,6 +12,9 @@ application version, not the template version.
 
 - Use the public installed-storage allocator capability in BLE/SLE starters;
   generated projects no longer call private facade allocation functions.
+- Validate emitted resource schemas and accounting instead of stale copied
+  profile sizes. Unknown schemas and inconsistent totals fail CI; host reports
+  and consumer locks are retained as artifacts, not claimed as HIL calibration.
 
 ### Changed
 

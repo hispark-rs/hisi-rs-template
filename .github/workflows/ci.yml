@@ -15,6 +15,14 @@ env:
   WS63_WIFI_PASSPHRASE: ci-passphrase
 
 jobs:
+  resource-contract:
+    name: Resource accounting negative tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run --script .github/scripts/test-resource-report.py
+
   generate:
     name: Generate ${{ matrix.chip }} / ${{ matrix.starter }}
     runs-on: ubuntu-latest
@@ -91,6 +99,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
 
       - name: Install Rust toolchain
         run: bash .github/scripts/install-toolchain.sh
@@ -188,11 +197,8 @@ jobs:
         shell: bash
         run: |
           just resource-report
-          test -s ${{ matrix.crate }}.resource.json
-          grep -q '"schema":"hisi-rf-radio-resource-report/v1"' ${{ matrix.crate }}.resource.json
-          grep -q '"profile":"${{ matrix.radio_profile }}"' ${{ matrix.crate }}.resource.json
-          grep -q '"dynamic_task_slots":4' ${{ matrix.crate }}.resource.json
-          grep -q '"task_stack_bytes":10240' ${{ matrix.crate }}.resource.json
+          uv run --script "${{ github.workspace }}/.github/scripts/check-resource-report.py" \
+            ${{ matrix.crate }}.resource.json --profile "${{ matrix.radio_profile }}"
 
       - name: Build plan image
         if: matrix.image
@@ -202,28 +208,22 @@ jobs:
           test -s ${{ matrix.crate }}.img
           test -s ${{ matrix.crate }}.plan.json
           if [ "${{ matrix.starter }}" = "wifi" ]; then
-            test -s ${{ matrix.crate }}.resource.json
-            grep -q '"schema":"hisi-rf-resource-report/v10"' ${{ matrix.crate }}.resource.json
-            grep -q '"profile":"wifi-wpa2-smoltcp"' ${{ matrix.crate }}.resource.json
-            grep -q '"profile_revision":"ws63-wifi-2026-08-03-r9"' ${{ matrix.crate }}.resource.json
-            grep -q '"runtime_resources_calibrated":false' ${{ matrix.crate }}.resource.json
-            grep -q '"event_capacity":8' ${{ matrix.crate }}.resource.json
-            grep -q '"control_storage_bytes":8800' ${{ matrix.crate }}.resource.json
-            grep -q '"radio_state_bytes":2288' ${{ matrix.crate }}.resource.json
-            grep -q '"dynamic_tasks_required":8' ${{ matrix.crate }}.resource.json
-            grep -q '"vendor_task_slots":7' ${{ matrix.crate }}.resource.json
-            grep -q '"worker_task_slots":1' ${{ matrix.crate }}.resource.json
-            grep -q '"task_stack_bytes":180224' ${{ matrix.crate }}.resource.json
-            grep -q '"minimum_task_stack_bytes":8192' ${{ matrix.crate }}.resource.json
-            grep -q '"runtime_object_headroom_bytes":16384' ${{ matrix.crate }}.resource.json
-            grep -q '"runtime_arena_bytes":197120' ${{ matrix.crate }}.resource.json
-            grep -q '"arena_storage_bytes":101888' ${{ matrix.crate }}.resource.json
-            grep -q '"shared_rf_arena_bytes":101824' ${{ matrix.crate }}.resource.json
-            grep -q '"caller_owned_bytes":307808' ${{ matrix.crate }}.resource.json
+            uv run --script "${{ github.workspace }}/.github/scripts/check-resource-report.py" \
+              ${{ matrix.crate }}.resource.json --profile wifi-wpa2-smoltcp
           elif [ "${{ matrix.starter }}" = "radio" ]; then
-            grep -q '"schema":"hisi-rf-radio-resource-report/v1"' ${{ matrix.crate }}.resource.json
-            grep -q '"profile":"${{ matrix.radio_profile }}"' ${{ matrix.crate }}.resource.json
+            uv run --script "${{ github.workspace }}/.github/scripts/check-resource-report.py" \
+              ${{ matrix.crate }}.resource.json --profile "${{ matrix.radio_profile }}"
           fi
+
+      - name: Preserve consumer resource and image evidence
+        if: matrix.starter == 'wifi' || matrix.starter == 'radio'
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-${{ matrix.project }}
+          path: |
+            ${{ runner.temp }}/${{ matrix.project }}/*.json
+            ${{ runner.temp }}/${{ matrix.project }}/Cargo.lock
+          if-no-files-found: error
 
   resource-report:
     name: Radio resource report / ${{ matrix.os }}
@@ -235,6 +235,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -267,10 +268,25 @@ jobs:
         working-directory: ${{ runner.temp }}/hp-ws63-sle-announce
         run: just resource-report
 
+      - name: Validate resource contracts on this host
+        run: |
+          uv run --script .github/scripts/check-resource-report.py "${{ runner.temp }}/hp-ws63-wifi/hp_ws63_wifi.resource.json" --profile wifi-wpa2-smoltcp
+          uv run --script .github/scripts/check-resource-report.py "${{ runner.temp }}/hp-ws63-ble-peripheral/hp_ws63_ble_peripheral.resource.json" --profile ble-peripheral
+          uv run --script .github/scripts/check-resource-report.py "${{ runner.temp }}/hp-ws63-sle-announce/hp_ws63_sle_announce.resource.json" --profile sle-announce
+
+      - name: Preserve host resource reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-reports-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/hp-ws63-*/*.resource.json
+            ${{ runner.temp }}/hp-ws63-*/Cargo.lock
+          if-no-files-found: error
+
   release:
     name: Publish template release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [generate, resource-report]
+    needs: [generate, resource-report, resource-contract]
     runs-on: ubuntu-latest
     permissions:
       contents: write

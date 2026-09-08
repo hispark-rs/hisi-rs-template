@@ -7,3 +7,5 @@ Cargo.lock
 *.img
 *.plan.json
 *.resource.json
+__pycache__/
+*.pyc
