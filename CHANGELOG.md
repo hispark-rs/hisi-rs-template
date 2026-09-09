@@ -20,9 +20,11 @@ application version, not the template version.
 
 - Pin `hisi-fwpkg-cli 0.3.3` in image tooling and CI so public installs include
   the corrected physical-load-address ELF expansion.
-- Update the WS63 Wi-Fi starter to `hisi-rf 0.1.0-alpha.114` and
+- Update the WS63 Wi-Fi/radio starters to `hisi-rf 0.1.0-alpha.116` and
   `hisi-rtos 0.1.0-alpha.25`, consuming the facade-owned storage, resources,
-  and two-argument initialization contract.
+  two-argument initialization, validated station identity, and passphrase
+  Debug redaction contracts. Wi-Fi retains the existing smoltcp profile;
+  this dependency update does not enable Embassy Net or HTTPS.
 
 ## [0.7.0-alpha.30] - 2026-08-29
 
