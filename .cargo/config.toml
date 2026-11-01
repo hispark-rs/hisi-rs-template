@@ -21,3 +21,13 @@ runner = "qemu-system-riscv32 -M {{chip}} -nographic -bios none -kernel"
 # Disable RISC-V linker relaxation (matches the vendor C SDK flow; avoids
 # gp-relative relaxation surprises with hisi-riscv-rt's custom linker scripts).
 rustflags = ["-C", "link-arg=--no-relax"]
+
+{%- if starter == "async" %}
+# Experimental RTOS standalone time profile. Explicit remote development graph;
+# these unreleased APIs are not claimed to work with registry-only dependencies.
+[patch.crates-io]
+hisi-hal = { git = "https://github.com/hispark-rs/hisi-hal.git", rev = "2b6cfcec688d3e2ea7e5f294e2d49d45d9091135" }
+hisi-rtos = { git = "https://github.com/hispark-rs/hisi-rtos", rev = "9b83efacb5b44d02c76e3f4a9193275256a373d5" }
+hisi-rf-rtos-driver = { git = "https://github.com/hispark-rs/hisi-rf-rtos-driver", rev = "f36280b51d93f8cb4e00962e3a450f6b8322e8bd" }
+hisi-riscv-rt = { git = "https://github.com/hispark-rs/hisi-riscv-rt.git", rev = "eb3e2d55a41c7655c2be83e465e5dc524eb1d7cb" }
+{%- endif %}
