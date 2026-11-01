@@ -243,3 +243,12 @@ for wiring and the vendor `burntool` / `loaderboot` UART flow.
 
 Generated from [hisi-rs-template](https://github.com/hispark-rs/hisi-rs-template)
 via [`cargo generate`](https://cargo-generate.github.io/cargo-generate/).
+
+### Experimental standalone Embassy migration
+
+The `async` starter uses `hisi-rtos` with `embassy-only,unstable` and explicitly
+hands over HAL TIMER/TCXO. It does not start the RTOS scheduler. The generated
+Cargo configuration pins remote development commits because these APIs are not
+published yet; this is not registry-only release qualification. `wifi` and
+`radio` retain their existing scheduler profiles. Ordinary HAL async does not
+require Embassy. No new hardware qualification is implied by the migration.
